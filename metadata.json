@@ -1,0 +1,6 @@
+{
+  "name": "웹툰 뭐보지? - 취향 필터링 미니앱",
+  "description": "네이버/카카오 웹툰의 실시간 연재 현황을 한눈에 보고, 만화규장각 API를 통한 장르 검색과 Gemini AI 가이드를 통해 내 취향에 딱 맞는 웹툰을 찾아내는 토스 스타일의 취향 필터링 미니앱입니다.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
