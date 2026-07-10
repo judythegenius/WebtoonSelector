@@ -15,7 +15,7 @@ export default function AdSimulator({ adState, attConsent, setAttConsent, onDism
 
   useEffect(() => {
     if (adState !== 'showing') return;
-    
+
     // Reset states on entry
     setCountdown(5);
     setShowATT(attConsent === 'prompt');
@@ -39,7 +39,7 @@ export default function AdSimulator({ adState, attConsent, setAttConsent, onDism
 
   return (
     <div id="ad-simulator-overlay" className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
-      
+
       {/* ATT (App Tracking Transparency) Dialog Mock */}
       <AnimatePresence>
         {showATT && (
@@ -90,7 +90,7 @@ export default function AdSimulator({ adState, attConsent, setAttConsent, onDism
             <span className="px-2.5 py-1 bg-white/10 text-white text-[10px] font-bold rounded-lg uppercase tracking-wider backdrop-blur-xs">
               AD SPONSOR
             </span>
-            
+
             {countdown > 0 ? (
               <span className="px-3 py-1 bg-black/40 text-slate-300 text-xs font-semibold rounded-full backdrop-blur-xs">
                 광고 {countdown}초 남음
@@ -116,18 +116,18 @@ export default function AdSimulator({ adState, attConsent, setAttConsent, onDism
               <Flame size={12} fill="currentColor" /> 토스 미니앱 연동 기념 한정 이벤트
             </span>
             <h3 className="text-2xl font-bold text-white tracking-tight leading-tight font-display mb-2">
-              AI가 설계한 완벽한 내 무협 유형 진단 투어!
+              깜짝 랜덤 웹툰 3선 투어!
             </h3>
             <p className="text-slate-300 text-xs leading-relaxed max-w-xs mb-6">
-              오늘 나의 웹툰 취향을 정교한 Gemini 엔진으로 분석해, 무림 속 가문을 수호하는 최강 가주로 전생했을 때의 소질과 특수 무공 유형을 추천해 드립니다!
+              지금 바로 무작위로 엄선한 웹툰 3편을 만나보세요. 매번 다른 조합으로 숨겨진 취향 저격 작품을 발견할 수 있습니다!
             </p>
             <div className="w-full max-w-[240px] bg-white/5 border border-white/5 rounded-2xl p-4 text-left">
               <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-2 flex items-center gap-1">
                 <MessageSquare size={10} /> 참가 보너스 무료 혜택
               </p>
               <div className="space-y-1.5">
-                <p className="text-xs text-slate-200 font-medium">✔️ 전설 등급 한정 스킨 패스</p>
-                <p className="text-xs text-slate-200 font-medium">✔️ 매일 100% 무료 장르 큐레이션</p>
+                <p className="text-xs text-slate-200 font-medium">✔️ 랜덤 웹툰 3선 즉시 매칭</p>
+                <p className="text-xs text-slate-200 font-medium">✔️ 매일 100% 무료 재도전 가능</p>
               </div>
             </div>
           </div>
@@ -137,12 +137,11 @@ export default function AdSimulator({ adState, attConsent, setAttConsent, onDism
             <button
               id="ad-cta-btn"
               onClick={() => {
-                alert("광고 대상인 'AI 무협 유형 테스트' 상세 웹 사이트로 이동합니다 (인앱 연동 데모).");
                 onDismiss();
               }}
               className="w-full py-4 bg-blue-500 hover:bg-blue-600 text-white font-bold text-sm rounded-2xl transition-all cursor-pointer shadow-lg shadow-blue-500/20 text-center"
             >
-              지금 무료 분석 참가하고 혜택 받기
+              지금 랜덤 추천 받기
             </button>
             <p className="text-[10px] text-slate-500 text-center">
               인앱 광고 2.0 ver2 가이드라인을 준수하는 공식 시뮬레이터 카드입니다.

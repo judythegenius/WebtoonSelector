@@ -3,35 +3,55 @@ import path from "path";
 import fs from "fs";
 import { fileURLToPath } from "url";
 import { createServer as createViteServer } from "vite";
-import { GoogleGenAI, Type } from "@google/genai";
 import dotenv from "dotenv";
 
-async function renderKakaoPage(url) {
-  const jinaUrl = `https://r.jina.ai/${url}`;
-  const res = await fetch(jinaUrl, {
-    headers: {
-      "X-Respond-With": "html"
-    }
-  });
-
-  if (!res.ok) {
-    throw new Error(`Jina Reader 요청 실패: ${res.status}`);
+async function searchNaverWeb(query, display = 10) {
+  const clientId = process.env.NAVER_CLIENT_ID;
+  const clientSecret = process.env.NAVER_CLIENT_SECRET;
+  if (!clientId || !clientSecret) {
+    throw new Error("NAVER_CLIENT_ID / NAVER_CLIENT_SECRET이 설정되지 않았습니다.");
   }
+  const res = await fetch(`https://openapi.naver.com/v1/search/webkr.json?query=${encodeURIComponent(query)}&display=${display}`, {
+    headers: { "X-Naver-Client-Id": clientId, "X-Naver-Client-Secret": clientSecret }
+  });
+  if (!res.ok) throw new Error(`네이버 검색 API 실패: ${res.status}`);
+  const data = await res.json();
+  return data.items || [];
+}
 
-const html = await res.text();
-  console.log("[Jina 디버그] 응답 길이:", html.length, "썸네일 태그 존재:", html.includes('alt="썸네일"'));
+async function searchNaverImage(query) {
+  const clientId = process.env.NAVER_CLIENT_ID;
+  const clientSecret = process.env.NAVER_CLIENT_SECRET;
+  const res = await fetch(`https://openapi.naver.com/v1/search/image?query=${encodeURIComponent(query)}&display=3&sort=sim`, {
+    headers: { "X-Naver-Client-Id": clientId, "X-Naver-Client-Secret": clientSecret }
+  });
+  if (!res.ok) return null;
+  const data = await res.json();
+  const items = data.items || [];
+  return items.length > 0 ? items[0].link : null;
+}
 
-  const thumbnailMatch = html.match(/<img[^>]*alt=["']썸네일["'][^>]*src=["']([^"']+)["']/i);
-  const titleMatch = html.match(/<span[^>]*class=["'][^"']*font-large3-bold[^"']*["'][^>]*>([^<]+)</i);
-  const relatedIds = [...html.matchAll(/\/content\/(\d+)/g)].map(m => m[1]);
-  const uniqueRelatedIds = [...new Set(relatedIds)];
+// 기존 webtoon 하나의 링크/썸네일 보강 (page.kakao.com 또는 webtoon.kakao.com)
+async function renderKakaoPage(pageUrl, title) {
+  const isKakaoPage = pageUrl.includes("page.kakao.com");
+  const platformLabel = isKakaoPage ? "카카오페이지" : "카카오웹툰";
+
+  // 1. 링크 검증: 이 제목으로 검색했을 때 진짜 해당 사이트 링크가 나오는지 확인
+  const webItems = await searchNaverWeb(`${title} ${platformLabel}`, 5);
+  const domainFilter = isKakaoPage ? "page.kakao.com/content/" : "webtoon.kakao.com/content/";
+  const matched = webItems.find(item => item.link.includes(domainFilter));
+
+  // 2. 썸네일: 네이버 이미지 검색
+  const thumbnail = await searchNaverImage(`${title} ${platformLabel} 웹툰 표지`);
 
   return {
-    thumbnail: thumbnailMatch ? thumbnailMatch[1] : null,
-    title: titleMatch ? titleMatch[1].trim() : null,
-    relatedIds: uniqueRelatedIds
+    thumbnail,
+    title: matched ? matched.title.replace(/<[^>]+>/g, "") : title,
+    validatedUrl: matched ? matched.link : null,
+    relatedIds: [] // 아래 3단계에서 별도 처리
   };
 }
+
 import https from "https";
 import http from "http";
 
@@ -45,25 +65,6 @@ const app = express();
 const PORT = 3000;
 
 app.use(express.json());
-
-// Initialize Gemini client (Lazy loaded or safe fallback)
-const getGeminiClient = () => {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    console.warn("WARNING: GEMINI_API_KEY is not defined. AI recommendation features will use fallback logic.");
-    return null;
-  }
-  return new GoogleGenAI({
-    apiKey,
-    httpOptions: {
-      headers: {
-        "User-Agent": "aistudio-build",
-      },
-    },
-  });
-};
-
-const ai = getGeminiClient();
 
 // Local DB Path
 const DATA_DIR = path.join(process.cwd(), "data");
@@ -572,8 +573,8 @@ const SEED_WEBTOONS = [
     webtoonId: "796123",
     title: "남편을 죽여줘요",
     author: "명랑 / LeeYone",
-    img: "https://image-comic.pstatic.net/webtoon/796123/thumbnail/thumbnail_IMAG21_6410129481134543456.jpg",
-    url: "https://comic.naver.com/webtoon/list?titleId=796123",
+    img: "https://image-comic.pstatic.net/webtoon/797410/thumbnail/thumbnail_IMAG21_9852442e-217e-4ec7-92a7-21c0ada85dc7.jpg",
+    url: "https://comic.naver.com/webtoon/list?titleId=797410",
     updateDays: ["SUN"],
     isEnd: false,
     isNew: false,
@@ -779,8 +780,14 @@ const SEED_WEBTOONS = [
   }
 ];
 
+let cachedWebtoons: any[] | null = null;
+let cacheTime = 0;
 // Helper to Load database
 function loadWebtoons(): any[] {
+  const now = Date.now();
+  if (cachedWebtoons && now - cacheTime < 30000) { // 30 seconds cache
+    return cachedWebtoons;
+  }
   try {
     let list: any[] = [];
     if (!fs.existsSync(DB_PATH)) {
@@ -834,8 +841,10 @@ function loadWebtoons(): any[] {
       fs.writeFileSync(DB_PATH, JSON.stringify(list, null, 2), "utf-8");
     }
 
-    return list;
-  } catch (err: any) {
+    cachedWebtoons = list;
+  cacheTime = Date.now();
+  return list;
+} catch (err: any) {
     log(`데이터베이스 로드 중 에러 발생: ${err.message}. 복구용 프리시드 데이터를 사용합니다.`);
     return SEED_WEBTOONS;
   }
@@ -843,19 +852,41 @@ function loadWebtoons(): any[] {
 
 // Helper to Save database
 let saveQueue = Promise.resolve();
-function saveWebtoons(data) {
-  saveQueue = saveQueue.then(() => {
-    try {
-      const tmpPath = DB_PATH + ".tmp";
-      fs.writeFileSync(tmpPath, JSON.stringify(data, null, 2), "utf-8");
-      fs.renameSync(tmpPath, DB_PATH); // 임시파일로 먼저 쓰고 통째로 교체 → 중간에 깨질 일이 없음
-    } catch (err) {
-      log(`데이터베이스 저장 중 에러 발생: ${err.message}`);
+function saveWebtoons(data: any[]) {
+  cachedWebtoons = data;
+  cacheTime = Date.now();
+  saveQueue = saveQueue.then(async () => {
+    // 고유한 임시 파일명 사용 (동시 저장 시 충돌 방지)
+    const tmpPath = `${DB_PATH}.${Date.now()}.${Math.random().toString(36).slice(2)}.tmp`;
+    const maxRetries = 5;
+
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        fs.writeFileSync(tmpPath, JSON.stringify(data, null, 2), "utf-8");
+        fs.renameSync(tmpPath, DB_PATH); // 임시파일로 먼저 쓰고 통째로 교체 → 중간에 깨질 일이 없음
+        return; // 성공하면 종료
+      } catch (err: any) {
+        if ((err.code === "EPERM" || err.code === "EBUSY") && attempt < maxRetries) {
+          // 파일이 잠겨있을 때: 짧게 대기 후 재시도
+          await new Promise(resolve => setTimeout(resolve, 100 * attempt));
+          continue;
+        }
+        log(`데이터베이스 저장 중 에러 발생: ${err.message}`);
+        // 최후 수단: rename 대신 직접 덮어쓰기 시도
+        try {
+          fs.writeFileSync(DB_PATH, JSON.stringify(data, null, 2), "utf-8");
+        } catch (fallbackErr: any) {
+          log(`데이터베이스 직접 저장도 실패: ${fallbackErr.message}`);
+        } finally {
+          // 남은 임시 파일 정리 시도
+          try { if (fs.existsSync(tmpPath)) fs.unlinkSync(tmpPath); } catch {}
+        }
+        return;
+      }
     }
   });
   return saveQueue;
 }
-
 // Stats helper
 function loadStats() {
   try {
@@ -1028,6 +1059,8 @@ async function enrichMissingBillingBackground() {
 // API Route: Webtoons list
 app.get("/api/webtoons", (req, res) => {
   const { platform, day, status, genre, q, price } = req.query;
+  const pageNum = parseInt((req.query.page as string) || "1");
+  const limitNum = parseInt((req.query.limit as string) || "6");
   let webtoons = loadWebtoons();
 
   // Trigger background enrichment for completed webtoons missing billing info
@@ -1068,10 +1101,15 @@ app.get("/api/webtoons", (req, res) => {
     }
   }
 
-  // Filter: genre
-  if (genre && genre !== "all") {
-    webtoons = webtoons.filter(w => w.genres && w.genres.some((g: string) => g.includes(genre as string) || (genre as string).includes(g)));
+// Filter: genre
+if (genre && genre !== "all") {
+  const genreStr = String(genre);
+  if (genreStr === "18+") {
+    webtoons = webtoons.filter(w => w.isAdult === true);
+  } else {
+    webtoons = webtoons.filter(w => w.genres && w.genres.some((g: string) => g.includes(genreStr) || genreStr.includes(g)));
   }
+}
 
   // Filter: query (title or author)
   if (q && typeof q === "string") {
@@ -1081,8 +1119,29 @@ app.get("/api/webtoons", (req, res) => {
       w.author.toLowerCase().includes(search)
     );
   }
+const sort = String(req.query.sort || "default");
+if (sort === "updated") {
+  webtoons = [...webtoons].sort((a, b) => (b.isUp ? 1 : 0) - (a.isUp ? 1 : 0));
+} else if (sort === "newest") {
+  webtoons = [...webtoons].sort((a, b) => (b.isNew ? 1 : 0) - (a.isNew ? 1 : 0));
+} else if (sort === "free") {
+  webtoons = [...webtoons].sort((a, b) => (b.freeEpisodes || 0) - (a.freeEpisodes || 0));
+}
 
-  res.json({ webtoons });
+const ids = req.query.ids as string;
+if (ids) {
+  const idList = ids.split(",");
+  webtoons = webtoons.filter(w => idList.includes(w.id));
+}
+
+const start = (pageNum - 1) * limitNum;
+  const paginated = webtoons.slice(start, start + limitNum);
+  
+  res.json({ 
+    webtoons: paginated,
+    total: webtoons.length,
+    hasMore: start + limitNum < webtoons.length
+  });
 });
 
 // API Route: Single webtoon live update and self-healing
@@ -1163,88 +1222,57 @@ app.post("/api/webtoons/:id/update-info", async (req, res) => {
       } catch (e: any) {
         log(`[API 에러] '${webtoon.title}' 네이버 페이지 파싱 실패: ${e.message}`);
       }
-      
+
+       webtoon.url = `https://comic.naver.com/webtoon/list?titleId=${titleId}`; 
       success = true;
 
-    } else if (webtoon.platform === "kakaoPage") {
-  try {
-    const pageUrl = `https://page.kakao.com/content/${webtoon.webtoonId}`;
-    const rendered = await renderKakaoPage(pageUrl);
-
-    if (rendered.thumbnail) {
-      webtoon.img = rendered.thumbnail;
-      success = true;
-    }
-    if (rendered.title) {
-      webtoon.title = rendered.title;
-    }
-    webtoon.url = pageUrl;
-
-    log(`[Puppeteer] '${webtoon.title}' 카카오페이지 썸네일/정보 렌더링 성공`);
-  } catch (e) {
-    log(`[Puppeteer 에러] '${webtoon.title}' 카카오페이지 렌더링 실패: ${e.message}`);
-  }
-
+} else if (webtoon.platform === "kakaoPage") {
+  webtoon.url = `https://page.kakao.com/content/${webtoon.webtoonId}`;
+  success = true;
 } else {
-      // 2. For Kakao
-      try {
-        const contentUrl = itemUrlString(webtoon);
-        webtoon.url = contentUrl; // Heal the saved URL property
-        const resHtml = await fetch(contentUrl, {
-          headers: {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-            "Referer": webtoon.platform === "kakaoPage" ? "https://page.kakao.com" : "https://webtoon.kakao.com"
-          }
-        });
-
-        if (resHtml.ok) {
-          const htmlText = await resHtml.text();
-          
-          // Scrape/parse from __NEXT_DATA__ JSON or standard page tags
-          const ogImgMatch = htmlText.match(/meta\s+property=["']og:image["']\s+content=["']([^"']+)["']/i) || 
-                             htmlText.match(/property=["']og:image["']\s+content=["']([^"']+)["']/i);
-          
-          // Check for video source tags (since Kakao Webtoons use animated video covers)
-          const videoSourceMatch = htmlText.match(/<source\s+[^>]*(?:data-src|src)=["']([^"']+\.(?:webm|mp4|mov)[^"']*)["']/i) ||
-                                   htmlText.match(/(?:data-src|src)=["']([^"']+\.(?:webm|mp4|mov)[^"']*)["']/i);
-
-          if (videoSourceMatch && videoSourceMatch[1]) {
-            webtoon.img = videoSourceMatch[1];
-            log(`[Live Updater] '${webtoon.title}'의 카카오 비디오 썸네일을 보강 및 복구 완료: ${webtoon.img}`);
-          } else if (ogImgMatch && ogImgMatch[1]) {
-            webtoon.img = ogImgMatch[1];
-            log(`[Live Updater] '${webtoon.title}'의 카카오 이미지 링크를 성공적으로 치유 완료: ${webtoon.img}`);
-          }
-
-          const isWaitFree = htmlText.includes("기다무") || htmlText.includes("기다리면 무료") || htmlText.includes("waitForFree\":true") || htmlText.includes("waitfree");
-          webtoon.isDailyPass = isWaitFree;
-          
-          if (isWaitFree) {
-            webtoon.isFree = false;
-            webtoon.dailyPassDuration = htmlText.includes("12시간") ? 12 : 24;
-          } else {
-            // Check free publishing in JSON or text
-            const isFreePub = htmlText.includes("FREE_PUBLISHING") || htmlText.includes("연재무료") || htmlText.includes("freePublishing\":true");
-            webtoon.isFree = isFreePub;
-          }
-
-          // Parse total episodes
-          const totalMatch = htmlText.match(/전체\s*(\d+)화/) || htmlText.match(/totalEpisodes":(\d+)/);
-          if (totalMatch) {
-            webtoon.totalEpisodes = parseInt(totalMatch[1], 10);
-            webtoon.freeEpisodes = isWaitFree ? Math.max(5, Math.floor(webtoon.totalEpisodes * 0.1)) : webtoon.totalEpisodes;
-            webtoon.paidEpisodes = webtoon.totalEpisodes - webtoon.freeEpisodes;
-          } else {
-            webtoon.totalEpisodes = webtoon.totalEpisodes || 120;
-            webtoon.freeEpisodes = webtoon.freeEpisodes || (isWaitFree ? 15 : 120);
-            webtoon.paidEpisodes = webtoon.totalEpisodes - webtoon.freeEpisodes;
-          }
-          success = true;
-        }
-      } catch (e: any) {
-        log(`[Kakao API 에러] '${webtoon.title}' 카카오/카카오페이지 크롤 에러: ${e.message}`);
+  // For Kakao (webtoon.kakao.com)
+  try {
+    const contentUrl = itemUrlString(webtoon);
+    webtoon.url = contentUrl;
+    const resHtml = await fetch(contentUrl, {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Referer": "https://webtoon.kakao.com"
       }
+    });
+
+    if (resHtml.ok) {
+      const htmlText = await resHtml.text();
+      const ogImgMatch = htmlText.match(/meta\s+property=["']og:image["']\s+content=["']([^"']+)["']/i) ||
+                         htmlText.match(/property=["']og:image["']\s+content=["']([^"']+)["']/i);
+      const videoSourceMatch = htmlText.match(/<source\s+[^>]*(?:data-src|src)=["']([^"']+\.(?:webm|mp4|mov)[^"']*)["']/i) ||
+                               htmlText.match(/(?:data-src|src)=["']([^"']+\.(?:webm|mp4|mov)[^"']*)["']/i);
+
+      if (videoSourceMatch && videoSourceMatch[1]) {
+        webtoon.img = videoSourceMatch[1];
+        log(`[Live Updater] '${webtoon.title}'의 카카오 비디오 썸네일 복구 완료`);
+      } else if (ogImgMatch && ogImgMatch[1]) {
+        webtoon.img = ogImgMatch[1];
+        log(`[Live Updater] '${webtoon.title}'의 카카오 이미지 치유 완료: ${webtoon.img}`);
+      }
+
+      const isWaitFree = htmlText.includes("기다무") || htmlText.includes("기다리면 무료");
+      webtoon.isDailyPass = isWaitFree;
+      webtoon.isFree = !isWaitFree && htmlText.includes("FREE_PUBLISHING");
+      if (isWaitFree) webtoon.dailyPassDuration = htmlText.includes("12시간") ? 12 : 24;
+
+      const totalMatch = htmlText.match(/전체\s*(\d+)화/);
+      if (totalMatch) {
+        webtoon.totalEpisodes = parseInt(totalMatch[1], 10);
+        webtoon.freeEpisodes = isWaitFree ? Math.max(5, Math.floor(webtoon.totalEpisodes * 0.1)) : webtoon.totalEpisodes;
+        webtoon.paidEpisodes = webtoon.totalEpisodes - webtoon.freeEpisodes;
+      }
+      success = true;
     }
+  } catch (e: any) {
+    log(`[Kakao API 에러] '${webtoon.title}': ${e.message}`);
+  }
+}
 
     if (success) {
       webtoons[idx] = webtoon;
@@ -1377,6 +1405,7 @@ app.post("/api/admin/crawl", async (req, res) => {
           isUp: isUpVal,
           isHiatus: isHiatusVal,
           isFree: isFreeVal,
+  isAdult: ext.adult || false,
           platform: "naver"
         });
         updatedCount++;
@@ -1396,6 +1425,7 @@ app.post("/api/admin/crawl", async (req, res) => {
           isUp: isUpVal,
           isHiatus: isHiatusVal,
           isFree: isFreeVal,
+  isAdult: ext.adult || false,
           platform: "naver",
           genres: guessedGenres
         });
@@ -1537,24 +1567,6 @@ app.post("/api/admin/enrich", async (req, res) => {
         log(`[로컬 분류 엔진] '${item.title}' -> 로컬 추정 장르 설정: ${foundGenres.join(", ")}`);
       }
 
-      // Fallback 2: Gemini classifier if local is default "드라마" and Gemini is available
-      if (foundGenres.length === 1 && foundGenres[0] === "드라마" && ai) {
-        try {
-          const response = await ai.models.generateContent({
-            model: "gemini-3.5-flash",
-            contents: `웹툰의 제목은 '${item.title}' 이고 작가는 '${item.author}'입니다. 이 웹툰의 가장 적합한 장르 하나를 다음 목록에서만 선택해 주세요: [판타지, 액션, 무협, 로맨스/순정, 스릴러, 일상, 개그, 스포츠, 학원, 드라마]. 답은 오직 단어 한 개만 출력하세요.`,
-          });
-          const geminiGenre = response.text?.trim() || "";
-          if (geminiGenre && ["판타지", "액션", "무협", "로맨스/순정", "스릴러", "일상", "개그", "스포츠", "학원", "드라마"].includes(geminiGenre)) {
-            foundGenres = [geminiGenre];
-            geminiCount++;
-            log(`[Gemini AI 분류] '${item.title}' -> AI 추정 장르 보강: ${geminiGenre}`);
-          }
-        } catch (geminiErr) {
-          // ignore
-        }
-      }
-
       // Update in our array
       const idx = webtoons.findIndex(w => w.id === item.id);
       if (idx !== -1) {
@@ -1586,61 +1598,267 @@ app.post("/api/admin/enrich", async (req, res) => {
 
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
+async function discoverKakaoTitlesByGenre(genreKeyword, isKakaoPage) {
+  const platformLabel = isKakaoPage ? "카카오페이지" : "카카오웹툰";
+  const domainPattern = isKakaoPage
+    ? /page\.kakao\.com\/content\/(\d+)/
+    : /webtoon\.kakao\.com\/content\/[^/]+\/(\d+)/;
+
+  const items = await searchNaverWeb(`${platformLabel} ${genreKeyword} 웹툰 추천`, 20);
+  const results = [];
+  for (const item of items) {
+    const m = item.link.match(domainPattern);
+    if (m) {
+      results.push({
+        webtoonId: m[1],
+        title: item.title.replace(/<[^>]+>/g, ""),
+        url: item.link
+      });
+    }
+  }
+  return results;
+}
+
+// 카카오페이지 크롤 (네이버 검색 API 기반 - 안정적)
 app.post("/api/admin/crawl-kakaopage", async (req, res) => {
   try {
     const webtoons = loadWebtoons();
-    const existingIds = new Set(webtoons.map(w => w.webtoonId));
-    const seeds = webtoons.filter(w => w.platform === "kakaoPage").slice(0, 5);
-
-    const discovered = new Set();
-    for (const seed of seeds) {
-      try {
-        const rendered = await renderKakaoPage(`https://page.kakao.com/content/${seed.webtoonId}`);
-        rendered.relatedIds.forEach(id => discovered.add(id));
-        log(`[카카오페이지 확장] '${seed.title}' 연관 작품 ${rendered.relatedIds.length}건 발견`);
-      } catch (e) {
-        log(`[카카오페이지 확장 에러] '${seed.title}' 렌더링 실패: ${e.message}`);
-      }
-      await sleep(3500); // 무료 분당 20회 제한 대응, 약 3.5초 간격
-    }
-
+    const existingIds = new Set(webtoons.map(w => w.id));
     let addedCount = 0;
-    for (const newId of discovered) {
-      if (existingIds.has(newId)) continue;
+
+    const DAY_MAP: Record<string, string> = {
+      "월": "MON", "화": "TUE", "수": "WED", "목": "THU",
+      "금": "FRI", "토": "SAT", "일": "SUN"
+    };
+
+    const GENRE_MAP: Record<string, string> = {
+      "로판": "로맨스/순정", "로맨스": "로맨스/순정", "판타지": "판타지",
+      "액션": "액션", "드라마": "드라마", "무협": "무협",
+      "스릴러": "스릴러", "개그": "개그", "일상": "일상", "학원": "학원"
+    };
+
+    // 요일별 page=0~9 까지 수집
+    for (let page = 0; page <= 9; page++) {
       try {
-        const rendered = await renderKakaoPage(`https://page.kakao.com/content/${newId}`);
-        if (rendered.title) {
+        const url = `https://bff-page.kakao.com/api/gateway/view/v2/landing/dayofweek?category_uid=10&page=${page}&screen_uid=52`;
+
+        const apiRes = await fetch(url, {
+          headers: {
+            "accept": "application/json, text/plain, */*",
+            "accept-language": "ko",
+            "origin": "https://page.kakao.com",
+            "referer": "https://page.kakao.com/",
+            "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+          },
+        });
+
+        if (!apiRes.ok) {
+          log(`[카카오페이지] page=${page} 실패: ${apiRes.status}`);
+          break;
+        }
+
+        const data = await apiRes.json();
+        const list = data?.result?.list || [];
+
+        if (list.length === 0) {
+          log(`[카카오페이지] page=${page} 데이터 없음 - 종료`);
+          break;
+        }
+
+        for (const item of list) {
+          const rawId = String(item.series_id);
+          const compositeId = `kakaoPage_${rawId}`;
+          if (existingIds.has(compositeId)) continue;
+          existingIds.add(compositeId);
+
+          // 이미지 URL 조합
+          const cardImg = item.asset_property?.card_img || "";
+          const thumbnail = cardImg
+            ? `https://dn-img-page.kakao.com/download/resource?kid=${cardImg}&filename=th3`
+            : "";
+
+          // 요일 매핑
+          const pubPeriod = item.pub_period || "";
+          const isEnd = item.state === "ST60" || pubPeriod === "완결";
+          const updateDays = isEnd
+            ? ["finished"]
+            : pubPeriod.split(",").map((d: string) => DAY_MAP[d.trim()] || d.trim()).filter(Boolean);
+
+          // 장르
+          const subCategory = item.sub_category || "";
+          const genre = GENRE_MAP[subCategory] || subCategory || "드라마";
+
+          // 작가
+          const author = item.authors || "작가 미상";
+
+          const isDailyPass = !!item.is_waitfree;
+          const dailyPassDuration = item.waitfree_period_by_minute
+            ? Math.round(item.waitfree_period_by_minute / 60)
+            : 24;
+
           webtoons.push({
-            id: `kakaoPage_${newId}`,
-            webtoonId: newId,
-            title: rendered.title,
-            author: "작가 미상",
-            img: rendered.thumbnail || "",
-            url: `https://page.kakao.com/content/${newId}`,
-            updateDays: ["unknown"],
-            isEnd: false,
+            id: compositeId,
+            webtoonId: rawId,
+            title: item.title || "제목 없음",
+            author,
+            img: thumbnail,
+            url: `https://page.kakao.com/content/${rawId}`,
+            updateDays: updateDays.length > 0 ? updateDays : ["unknown"],
+            isEnd,
             isNew: false,
             isUp: false,
             platform: "kakaoPage",
-            genres: guessGenreByTitle(rendered.title),
-            isFree: false
+            genres: [genre],
+            isFree: !!item.is_all_free,
+            isDailyPass,
+            dailyPassDuration,
+            freeEpisodes: item.free_slide_count || 0,
+            isAdult: item.age_grade >= 18,  // ← 추가
           });
           addedCount++;
-          log(`[카카오페이지 확장] 신규 작품 추가: ${rendered.title}`);
-        } else {
-          log(`[카카오페이지 확장] id=${newId} 제목 추출 실패, 건너뜀`);
+          log(`[카카오페이지] 추가: ${item.title} (${rawId})`);
         }
-      } catch (e) {
-        log(`[카카오페이지 확장 에러] id=${newId} 실패: ${e.message}`);
+
+        await new Promise(r => setTimeout(r, 300));
+      } catch (e: any) {
+        log(`[카카오페이지 에러] page=${page}: ${e.message}`);
       }
-      await sleep(3500);
     }
 
     saveWebtoons(webtoons);
-    log(`[카카오페이지 확장 크롤] 신규 ${addedCount}건 추가 (발견된 후보 ${discovered.size}건)`);
-    res.json({ success: true, added: addedCount, discovered: discovered.size });
-  } catch (err) {
-    log(`카카오페이지 확장 크롤 실패: ${err.message}`);
+    log(`[카카오페이지 완료] 신규 ${addedCount}건. 총 ${webtoons.length}건`);
+    res.json({ success: true, added: addedCount, total: webtoons.length });
+
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 카카오웹툰 크롤 (네이버 검색 API 기반)
+app.post("/api/admin/crawl-kakao", async (req, res) => {
+  try {
+    const webtoons = loadWebtoons();
+    const existingIds = new Set(webtoons.map(w => w.id));
+    let addedCount = 0;
+
+    const PLACEMENTS = [
+      { key: "timetable_new",       day: "unknown",  isEnd: false },
+      { key: "timetable_mon",       day: "MON",      isEnd: false },
+      { key: "timetable_tue",       day: "TUE",      isEnd: false },
+      { key: "timetable_wed",       day: "WED",      isEnd: false },
+      { key: "timetable_thu",       day: "THU",      isEnd: false },
+      { key: "timetable_fri",       day: "FRI",      isEnd: false },
+      { key: "timetable_sat",       day: "SAT",      isEnd: false },
+      { key: "timetable_sun",       day: "SUN",      isEnd: false },
+      { key: "timetable_completed", day: "finished", isEnd: true  },
+    ];
+
+    const GENRE_MAP: Record<string, string> = {
+      ROMANCE:          "로맨스/순정",
+      ROMANCE_FANTASY:  "로맨스/순정",
+      FANTASY:          "판타지",
+      ACTION:           "액션",
+      DRAMA:            "드라마",
+      THRILLER:         "스릴러",
+      COMEDY:           "개그",
+      MARTIAL_ARTS:     "무협",
+      SPORTS:           "스포츠",
+      SLICE_OF_LIFE:    "일상",
+      SCHOOL:           "학원",
+    };
+
+    for (const placement of PLACEMENTS) {
+      try {
+        const url = `https://gateway-kw.kakao.com/section/v2/timetables/days?placement=${placement.key}`;
+        const apiRes = await fetch(url, {
+          headers: {
+            "accept":          "application/json, text/plain, */*",
+            "accept-language": "ko",
+            "origin":          "https://webtoon.kakao.com",
+            "referer":         "https://webtoon.kakao.com/",
+            "user-agent":      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+          },
+        });
+
+        if (!apiRes.ok) {
+          log(`[카카오웹툰] ${placement.key} 실패: ${apiRes.status}`);
+          continue;
+        }
+
+        const data = await apiRes.json();
+        const sections = data?.data || [];
+
+        for (const section of sections) {
+          const cardGroups = section.cardGroups || [];
+          for (const group of cardGroups) {
+            const cards = group.cards || [];
+            for (const card of cards) {
+              const content = card.content;
+              if (!content || !content.id) continue;
+
+              const rawId    = String(content.id);
+              const compositeId = `kakao_${rawId}`;
+              if (existingIds.has(compositeId)) continue;
+              existingIds.add(compositeId);
+
+              // 작가: AUTHOR 타입 우선, 없으면 첫번째
+              const authorObj = content.authors?.find((a: any) => a.type === "AUTHOR") || content.authors?.[0];
+              const author    = authorObj?.name || "작가 미상";
+
+              // 썸네일: c1/2x 이미지 우선, 애니메이션 fallback
+              const thumbnail =
+                content.titleImageA ||
+                content.featuredCharacterImageA ||
+                content.featuredCharacterAnimationFirstFrame ||
+                content.titleImageB || "";
+
+              // URL: seoId 있으면 사용
+              const seoId = content.seoId || encodeURIComponent(content.title || rawId);
+              const webtoonUrl = `https://webtoon.kakao.com/content/${seoId}/${rawId}`;
+
+              // 장르: genreFilters에서 "all" 제외하고 매핑
+              const genreKeys = (card.genreFilters || []).filter((g: string) => g !== "all");
+              const genres    = genreKeys.map((g: string) => GENRE_MAP[g] || g).filter(Boolean);
+
+              // 기다무 여부
+              const isDailyPass = content.badges?.some((b: any) => b.title === "WAIT_FOR_FREE") || false;
+              const isFree      = content.badges?.some((b: any) => b.title === "FREE_PUBLISHING") || false;
+
+              webtoons.push({
+              id:               compositeId,
+              webtoonId:        rawId,
+              title:            content.title || "제목 없음",
+              author,
+              img:              thumbnail,
+              url:              webtoonUrl,
+              updateDays:       [placement.day],
+              isEnd:            placement.isEnd,
+              isNew:            card.additional?.label === "오늘" || false,
+              isUp:             false,
+              platform:         "kakao",
+              genres:           genres.length > 0 ? genres : ["드라마"],
+              isFree,
+              isDailyPass,
+              dailyPassDuration: 24,
+              isAdult: content.adult === true || card.additional?.adult === true,  // ← 추가
+            });
+                          addedCount++;
+              log(`[카카오웹툰] 추가: ${content.title} (${rawId})`);
+            }
+          }
+        }
+
+        await new Promise(r => setTimeout(r, 300));
+      } catch (e: any) {
+        log(`[카카오웹툰 에러] ${placement.key}: ${e.message}`);
+      }
+    }
+
+    saveWebtoons(webtoons);
+    log(`[카카오웹툰 완료] 신규 ${addedCount}건. 총 ${webtoons.length}건`);
+    res.json({ success: true, added: addedCount, total: webtoons.length });
+
+  } catch (err: any) {
     res.status(500).json({ success: false, error: err.message });
   }
 });
@@ -1704,7 +1922,8 @@ app.get("/api/image-proxy", (req, res) => {
       if (res.headersSent) return;
 
       if (depth > 3) {
-        return res.redirect(`https://placehold.co/300x400/eceef5/4a5568?text=${encodeURIComponent("이미지 준비중")}`);
+         if (!res.headersSent) res.status(404).end();
+  return;
       }
 
       const parsedUrl = new URL(targetUrl);
@@ -1779,17 +1998,20 @@ app.get("/api/image-proxy", (req, res) => {
                     // Re-proxy using the freshly retrieved image URL
                     return proxyImageNative(currentUrl, depth + 1);
                   } else {
-                    return res.redirect(`https://placehold.co/300x400/eceef5/4a5568?text=${encodeURIComponent("이미지 준비중")}`);
+                     if (!res.headersSent) res.status(404).end();
+  return;
                   }
                 })
                 .catch(() => {
-                  return res.redirect(`https://placehold.co/300x400/eceef5/4a5568?text=${encodeURIComponent("이미지 준비중")}`);
+                   if (!res.headersSent) res.status(404).end();
+  return;
                 });
               return;
             }
           }
 
-          return res.redirect(`https://placehold.co/300x400/eceef5/4a5568?text=${encodeURIComponent("이미지 준비중")}`);
+           if (!res.headersSent) res.status(404).end();
+  return;
         }
 
         let contentType = remoteRes.headers["content-type"] || "";
@@ -1810,135 +2032,28 @@ app.get("/api/image-proxy", (req, res) => {
       });
 
       remoteReq.on("error", (err) => {
-        if (res.headersSent || requestResponded) return;
-        requestResponded = true;
-        console.error("Native image proxy request error:", err);
-        res.redirect(`https://placehold.co/300x400/eceef5/4a5568?text=${encodeURIComponent("이미지 준비중")}`);
-      });
+          if (res.headersSent || requestResponded) return;
+          requestResponded = true;
+          console.error("Native image proxy request error:", err);
+          res.status(404).end();
+        });
 
-      remoteReq.on("timeout", () => {
-        remoteReq.destroy();
-        if (res.headersSent || requestResponded) return;
-        requestResponded = true;
-        res.redirect(`https://placehold.co/300x400/eceef5/4a5568?text=${encodeURIComponent("이미지 준비중")}`);
-      });
-
+        remoteReq.on("timeout", () => {
+          remoteReq.destroy();
+          if (res.headersSent || requestResponded) return;
+          requestResponded = true;
+          res.status(404).end();
+        });
       remoteReq.end();
     };
 
     proxyImageNative(imageUrl, 0);
 
-  } catch (err: any) {
-    if (!res.headersSent) {
-      res.redirect(`https://placehold.co/300x400/eceef5/4a5568?text=${encodeURIComponent("이미지 준비중")}`);
-    }
+} catch (err: any) {
+  if (!res.headersSent) {
+    res.status(404).end();
   }
-});
-
-// API Route: Gemini taste-matching curation / AI guide chat
-app.post("/api/gemini/recommend", async (req, res) => {
-  const { prompt, filters } = req.body;
-  if (!prompt) {
-    return res.status(400).json({ error: "취향 분석용 프롬프트를 입력해주세요." });
-  }
-
-  try {
-    const webtoons = loadWebtoons();
-    
-    // Create a compact list of webtoons for context
-    const contextList = webtoons.map(w => ({
-      id: w.id,
-      title: w.title,
-      author: w.author,
-      platform: w.platform === "naver" ? "네이버웹툰" : w.platform === "kakao" ? "카카오웹툰" : "카카오페이지",
-      genres: w.genres || [],
-      isEnd: w.isEnd ? "완결" : "연재중",
-      url: w.url
-    }));
-
-    if (!ai) {
-      // Return beautiful mock AI suggestions based on local simple text matching if Gemini is not set up
-      log("[Gemini Fallback] API 키가 없어 로컬 알고리즘으로 취향 웹툰을 매칭합니다.");
-      const searchWords = prompt.toLowerCase().split(/\s+/);
-      let matches = webtoons.filter(w => 
-        searchWords.some((word: string) => 
-          w.title.toLowerCase().includes(word) || 
-          (w.genres && w.genres.some((g: string) => g.toLowerCase().includes(word)))
-        )
-      );
-      if (matches.length === 0) {
-        matches = webtoons.slice(0, 3);
-      } else {
-        matches = matches.slice(0, 3);
-      }
-
-      const recs = matches.map(w => ({
-        id: w.id,
-        reason: `'${w.title}'은(는) 입력하신 "${prompt}" 성향에 맞춰 로컬 알고리즘이 추천하는 최고 평점의 ${w.genres.join(", ")} 장르 작품입니다.`
-      }));
-
-      return res.json({
-        recommendations: recs,
-        chatResponse: `AI 비서 가이드: 현재 로컬 모드로 응답 중입니다. "${prompt}"에 대한 최적의 웹툰 컬렉션을 준비했습니다. (Gemini API 키가 Secrets 패널에 설정되면 고도로 학습된 인공지능 해설이 활성화됩니다.)`
-      });
-    }
-
-    log(`[Gemini AI Curation] 사용자 질문 처리 중: "${prompt}"`);
-
-    const systemInstruction = `당신은 대한민국 최고의 웹툰 전문 큐레이터이자 다정한 가이드 "뭐보지 AI"입니다.
-사용자가 입력한 기분, 선호 키워드, 상황, 혹은 질문에 딱 맞는 웹툰을 데이터베이스에서 정확히 선택해서 한국어로 추천해야 합니다.
-
-아래 주어진 전체 웹툰 데이터베이스 정보를 참고하여 추천해 주세요.
-반드시 제공된 데이터베이스 내의 실제 웹툰 ID(id)를 사용해야 합니다. 절대 임의로 새로운 ID를 지어내지 마십시오!
-
-[전체 웹툰 데이터베이스]
-${JSON.stringify(contextList, null, 2)}
-
-[응답 규칙]
-1. 추천 리스트는 반드시 정확히 3개를 선택해 주세요.
-2. 각 추천에는 작품의 id값과 선택한 구체적 이유(reason)를 적어주세요.
-3. chatResponse에는 사용자에게 추천을 건네는 따뜻하고 매끄러운 큐레이션 평론 글을 작성해 주세요. (200자 이내)
-4. 반드시 JSON 포맷으로 응답해 주세요.`;
-
-    const response = await ai.models.generateContent({
-      model: "gemini-3.5-flash",
-      contents: prompt,
-      config: {
-        systemInstruction,
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            recommendations: {
-              type: Type.ARRAY,
-              items: {
-                type: Type.OBJECT,
-                properties: {
-                  id: { type: Type.STRING, description: "추천하는 웹툰의 실제 id" },
-                  reason: { type: Type.STRING, description: "사용자 성향과 매칭되어 추천하는 특별한 이유 (존댓말, 1-2문장)" }
-                },
-                required: ["id", "reason"]
-              }
-            },
-            chatResponse: {
-              type: Type.STRING,
-              description: "사용자에게 자연스럽게 다가가는 해설 및 인사이트 글 (한국어)"
-            }
-          },
-          required: ["recommendations", "chatResponse"]
-        }
-      }
-    });
-
-    const resultText = response.text || "";
-    const parsedCuration = JSON.parse(resultText.trim());
-    
-    res.json(parsedCuration);
-
-  } catch (err: any) {
-    log(`[Gemini AI 에러] 큐레이션 도중 에러가 발생했습니다: ${err.message}`);
-    res.status(500).json({ error: "AI 취향 추천 분석 실패", details: err.message });
-  }
+}
 });
 
 // API Route: Database & crawler stats
@@ -2023,6 +2138,7 @@ async function triggerBackgroundCrawl() {
           isUp: isUpVal,
           isHiatus: isHiatusVal,
           isFree: isFreeVal,
+  isAdult: ext.adult || false,
           platform: "naver"
         });
       } else {
@@ -2040,6 +2156,7 @@ async function triggerBackgroundCrawl() {
           isUp: isUpVal,
           isHiatus: isHiatusVal,
           isFree: isFreeVal,
+  isAdult: ext.adult || false,
           platform: "naver",
           genres: guessedGenres
         });
@@ -2065,10 +2182,15 @@ async function startServer() {
 
   if (process.env.NODE_ENV !== "production") {
     log("개발 모드: Vite 개발 서버 미들웨어를 활성화합니다.");
-    const vite = await createViteServer({
-      server: { middlewareMode: true },
-      appType: "spa",
-    });
+ const vite = await createViteServer({
+  server: {
+    middlewareMode: true,
+    watch: {
+      ignored: ["**/data/**"]
+    }
+  },
+  appType: "spa",
+});
     app.use(vite.middlewares);
   } else {
     log("프로덕션 모드: 정적 애셋 빌드 파일 및 인덱스를 서빙합니다.");
@@ -2083,5 +2205,40 @@ async function startServer() {
     log(`웹툰 취향 필터링 서버가 http://localhost:${PORT} 에서 활성화되었습니다.`);
   });
 }
+
+app.post("/api/admin/clean-kakao", (req, res) => {
+  try {
+    const webtoons = loadWebtoons();
+    const before = webtoons.length;
+
+    const cleaned = webtoons.filter(w => w.platform === "naver");
+
+    saveWebtoons(cleaned);
+    log(`[정리 완료] ${before}건 → ${cleaned.length}건 (${before - cleaned.length}건 제거)`);
+    res.json({ success: true, before, after: cleaned.length, removed: before - cleaned.length });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 매일 새벽 3시 자동 크롤
+const scheduleDaily = () => {
+  const now = new Date();
+  const next3am = new Date();
+  next3am.setHours(3, 0, 0, 0);
+  if (next3am <= now) next3am.setDate(next3am.getDate() + 1);
+  
+  const msUntil3am = next3am.getTime() - now.getTime();
+  
+  setTimeout(() => {
+    log("[스케줄러] 자동 크롤 시작");
+    triggerBackgroundCrawl(); // 네이버
+    scheduleDaily(); // 다음날 예약
+  }, msUntil3am);
+  
+  log(`[스케줄러] 다음 자동 크롤: ${next3am.toLocaleString("ko-KR")}`);
+};
+
+scheduleDaily();
 
 startServer();

@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 
 export interface UseInterstitialAdOptions {
   adGroupId?: string;
@@ -15,58 +15,66 @@ export function useInterstitialAd({
 }: UseInterstitialAdOptions = {}) {
   const [adState, setAdState] = useState<'idle' | 'loading' | 'loaded' | 'showing' | 'dismissed' | 'error'>('idle');
   const [attConsent, setAttConsent] = useState<'prompt' | 'granted' | 'denied'>('prompt');
-  
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Checks if the true Toss Web Framework is available
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const adStateRef = useRef(adState);
+
+  // Keep ref in sync for any state changes coming from outside this hook
+  useEffect(() => {
+    adStateRef.current = adState;
+  }, [adState]);
+
+  // Update both React state (for UI re-render) and the ref (for synchronous
+  // reads within the same tick) together. Avoids the stale-closure race
+  // where a callback fires in the same tick as setState, before the
+  // useEffect above has a chance to run.
+  const setAdStateSynced = useCallback((next: typeof adState) => {
+    adStateRef.current = next;
+    setAdState(next);
+  }, []);
+
   const isTossSdkSupported = useCallback(() => {
     return typeof window !== 'undefined' && (window as any).toss?.webFramework !== undefined;
   }, []);
 
   const loadAd = useCallback(async () => {
-    setAdState('loading');
+    setAdStateSynced('loading');
     console.log(`[Toss Ad SDK] loadFullScreenAd 호출 (adGroupId: ${adGroupId})`);
 
-    // Simulate SDK loading state
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
 
     timeoutRef.current = setTimeout(() => {
       if (Math.random() < 0.05) {
-        // Safe fail rate for realism / error testing
-        setAdState('error');
+        setAdStateSynced('error');
         if (onAdError) onAdError(new Error("Ad load failed. Network error."));
       } else {
-        setAdState('loaded');
+        setAdStateSynced('loaded');
         console.log(`[Toss Ad SDK] 전면 광고 로드 완료 (loaded)`);
         if (onAdLoaded) onAdLoaded();
       }
-    }, 1200); // Realistic network delay
-  }, [adGroupId, onAdLoaded, onAdError]);
+    }, 1200);
+  }, [adGroupId, onAdLoaded, onAdError, setAdStateSynced]);
 
   const showAd = useCallback(async () => {
-    if (adState !== 'loaded') {
+    if (adStateRef.current !== 'loaded') {
       console.warn("[Toss Ad SDK] 광고가 아직 로드되지 않았습니다.");
-      // Fallback: Proceed instantly to trigger dismissed to prevent blocking user journey
       if (onAdDismissed) onAdDismissed();
       return;
     }
 
-    setAdState('showing');
+    setAdStateSynced('showing');
     console.log(`[Toss Ad SDK] showFullScreenAd 호출`);
-    
-    // In production, we'd trigger window.toss.showFullScreenAd
-    // Here we manage local states to render a gorgeous simulated interactive ad inside the web applet!
-  }, [adState, onAdDismissed]);
+  }, [onAdDismissed, setAdStateSynced]);
 
   const dismissAd = useCallback(() => {
-    setAdState('dismissed');
+    setAdStateSynced('dismissed');
     console.log(`[Toss Ad SDK] 전면 광고 닫힘 (dismissed)`);
     if (onAdDismissed) onAdDismissed();
-  }, [onAdDismissed]);
+  }, [onAdDismissed, setAdStateSynced]);
 
   const resetAd = useCallback(() => {
-    setAdState('idle');
-  }, []);
+    setAdStateSynced('idle');
+  }, [setAdStateSynced]);
 
   return {
     adState,

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Webtoon } from "../types";
 import { ExternalLink, Flame, Sparkles, BookOpen, RefreshCw } from "lucide-react";
 import { motion } from "motion/react";
@@ -12,6 +12,22 @@ interface WebtoonGridProps {
 export default function WebtoonGrid({ webtoons, onResetFilters, onUpdateWebtoon }: WebtoonGridProps) {
   const [failedImageIds, setFailedImageIds] = useState<Record<string, boolean>>({});
   const [updatingIds, setUpdatingIds] = useState<Record<string, boolean>>({});
+
+  // 이미지 없는 카카오 카드 자동 업뎃
+useEffect(() => {
+  if (!onUpdateWebtoon) return;
+  const kakaoWithoutImg = webtoons.filter(
+    w => (w.platform === "kakao" || w.platform === "kakaoPage") && !w.img
+  );
+  kakaoWithoutImg.forEach(w => {
+    if (!updatingIds[w.id]) {
+      setUpdatingIds(prev => ({ ...prev, [w.id]: true }));
+      onUpdateWebtoon(w.id).finally(() => {
+        setUpdatingIds(prev => ({ ...prev, [w.id]: false }));
+      });
+    }
+  });
+}, [webtoons]);
   
   const handleUpdateClick = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
@@ -110,7 +126,9 @@ export default function WebtoonGrid({ webtoons, onResetFilters, onUpdateWebtoon 
         {webtoons.map((webtoon, idx) => {
           const pStyle = getPlatformStyle(webtoon.platform);
           // Bypass referer check using server proxy
-          const proxiedImg = `/api/image-proxy?url=${encodeURIComponent(webtoon.img)}`;
+          const proxiedImg = webtoon.img 
+          ? `/api/image-proxy?url=${encodeURIComponent(webtoon.img)}&t=${Date.now()}`
+          : "";
 
           return (
             <motion.div
@@ -158,40 +176,84 @@ export default function WebtoonGrid({ webtoons, onResetFilters, onUpdateWebtoon 
                     webtoon.img.toLowerCase().includes(".mp4")
                   ) ? (
                     <video
+                    key={webtoon.img}
                       src={proxiedImg}
                       playsInline
                       autoPlay
                       loop
                       muted
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                      onError={() => {
+                    onError={() => {
+                      if (onUpdateWebtoon && !updatingIds[webtoon.id]) {
+                        setUpdatingIds(prev => ({ ...prev, [webtoon.id]: true }));
+                        onUpdateWebtoon(webtoon.id).then((updated) => {
+                          if (updated?.img) {
+                            // 이미지 URL 바뀌면 failedImageIds 초기화해서 다시 시도
+                            setFailedImageIds(prev => {
+                              const next = { ...prev };
+                              delete next[webtoon.id];
+                              return next;
+                            });
+                          } else {
+                            setFailedImageIds(prev => ({ ...prev, [webtoon.id]: true }));
+                          }
+                        }).finally(() => {
+                          setUpdatingIds(prev => ({ ...prev, [webtoon.id]: false }));
+                        });
+                      } else {
                         setFailedImageIds(prev => ({ ...prev, [webtoon.id]: true }));
-                      }}
+                      }
+                    }}
                     />
                   ) : (
-                    <img
+
+                  <img
+                  key={webtoon.img}
                       src={proxiedImg}
                       alt={webtoon.title}
                       referrerPolicy="no-referrer"
                       loading="lazy"
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                      onError={() => {
+                onError={() => {
+                  if (onUpdateWebtoon && !updatingIds[webtoon.id]) {
+                    setUpdatingIds(prev => ({ ...prev, [webtoon.id]: true }));
+                    onUpdateWebtoon(webtoon.id).then((updated) => {
+                      if (updated?.img) {
+                        // 이미지 URL 바뀌면 failedImageIds 초기화해서 다시 시도
+                        setFailedImageIds(prev => {
+                          const next = { ...prev };
+                          delete next[webtoon.id];
+                          return next;
+                        });
+                      } else {
                         setFailedImageIds(prev => ({ ...prev, [webtoon.id]: true }));
-                      }}
+                      }
+                    }).finally(() => {
+                      setUpdatingIds(prev => ({ ...prev, [webtoon.id]: false }));
+                    });
+                  } else {
+                    setFailedImageIds(prev => ({ ...prev, [webtoon.id]: true }));
+                  }
+                }}
                     />
                   )
                 )}
-                
-                {/* Floating Tags */}
-                <div className="absolute top-2.5 left-2.5 flex flex-wrap gap-1.5 z-10">
-                  <span className={`px-2 py-0.5 text-[10px] font-bold text-white rounded-md shadow-xs ${pStyle.bg}`}>
-                    {pStyle.label}
-                  </span>
-                  <span className="px-2 py-0.5 text-[10px] font-bold bg-gray-900/80 text-white rounded-md backdrop-blur-xs">
-                    {getDayLabel(webtoon.updateDays, webtoon.isEnd)}
-                  </span>
-                </div>
 
+          {/* Floating Tags */}
+          <div className="absolute top-2.5 left-2.5 flex flex-wrap gap-1.5 z-10">
+            <span className={`px-2 py-0.5 text-[10px] font-bold text-white rounded-md shadow-xs ${pStyle.bg}`}>
+              {pStyle.label}
+            </span>
+            <span className="px-2 py-0.5 text-[10px] font-bold bg-gray-900/80 text-white rounded-md backdrop-blur-xs">
+              {getDayLabel(webtoon.updateDays, webtoon.isEnd)}
+            </span>
+            {webtoon.isAdult && (
+              <span className="px-1.5 py-0.5 text-[9px] font-bold bg-red-500 text-white rounded-md shadow-xs">
+                18+
+              </span>
+            )}
+          </div>
+                
                 {/* Hot Status Overlays */}
                 <div className="absolute top-2.5 right-2.5 flex gap-1 z-10">
                   {webtoon.isUp && (

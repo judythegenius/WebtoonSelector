@@ -11,6 +11,7 @@ export interface Webtoon {
   isUp: boolean;
   isHiatus?: boolean;
   isFree?: boolean;
+  isAdult?: boolean;
   platform: string; // "naver" | "kakao" | "kakaoPage"
   genres: string[]; // Filled via Manhwa Gyujanggak API or fallback
   
@@ -31,7 +32,7 @@ export type PlatformFilter = 'all' | 'naver' | 'kakao' | 'kakaoPage';
 export type DayFilter = 'all' | 'MON' | 'TUE' | 'WED' | 'THU' | 'FRI' | 'SAT' | 'SUN';
 export type StatusFilter = 'all' | 'ongoing' | 'finished' | 'hiatus';
 export type PriceFilter = 'all' | 'free' | 'paid';
-export type SortOption = 'default' | 'totalEpisodes' | 'freeEpisodes' | 'paidEpisodesAsc' | 'newest';
+export type SortOption = 'default' | 'newest' | 'updated' | 'free';
 
 export interface FilterSettings {
   platform: PlatformFilter;

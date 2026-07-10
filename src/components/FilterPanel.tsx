@@ -67,13 +67,12 @@ export default function FilterPanel({ settings, onChange, availableGenres }: Fil
     { key: "paid", label: "유료" },
   ];
 
-  const SORTS: { key: SortOption; label: string }[] = [
-    { key: "default", label: "기본 정렬" },
-    { key: "totalEpisodes", label: "회차 많은순" },
-    { key: "freeEpisodes", label: "무료 많은순" },
-    { key: "paidEpisodesAsc", label: "유료 최소순" },
-    { key: "newest", label: "신작 우선" },
-  ];
+const SORTS: { key: SortOption; label: string }[] = [
+  { key: "default", label: "기본 정렬" },
+  { key: "updated", label: "업데이트순" },
+  { key: "newest", label: "신작순" },
+  { key: "free", label: "무료 많은순" },
+];
 
   return (
     <div id="filter-panel" className="bg-white rounded-2xl p-5 md:p-6 shadow-xs border border-gray-100 transition-all duration-300 space-y-5">
@@ -226,12 +225,13 @@ export default function FilterPanel({ settings, onChange, availableGenres }: Fil
               onChange={(e) => handleGenreChange(e.target.value)}
               className="w-full bg-gray-50 border-2 border-transparent text-gray-700 text-xs py-3 px-3.5 rounded-xl focus:outline-none focus:bg-white focus:border-toss-blue/30 appearance-none cursor-pointer font-bold"
             >
-              <option value="all">장르 전체</option>
-              {availableGenres.map((g) => (
-                <option key={g} value={g}>
-                  {g}
-                </option>
-              ))}
+<option value="all">장르 전체</option>
+{availableGenres.map((g) => (
+  <option key={g} value={g}>
+    {g}
+  </option>
+))}
+<option value="18+">🔞 18+</option>
             </select>
             <div className="absolute inset-y-0 right-0 pr-3.5 flex items-center pointer-events-none text-gray-400">
               <svg className="w-4 h-4 fill-current" viewBox="0 0 20 20">

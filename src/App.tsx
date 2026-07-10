@@ -1,8 +1,7 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { FilterSettings, Webtoon } from "./types";
 import FilterPanel from "./components/FilterPanel";
 import WebtoonGrid from "./components/WebtoonGrid";
-import AIGuide from "./components/AIGuide";
 import AdSimulator from "./components/AdSimulator";
 import { useInterstitialAd } from "./hooks/useInterstitialAd";
 import { Sparkles, RefreshCw, AlertCircle, TrendingUp, Compass, Flame, Info, Sliders } from "lucide-react";
@@ -26,10 +25,16 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [curatedIds, setCuratedIds] = useState<string[] | null>(null);
-  
+  const [hasMore, setHasMore] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+
   // Real system time simulation for native mobile feel
   const [time, setTime] = useState("12:00");
   const [showAdmin, setShowAdmin] = useState(false);
+
+  // Tracks WHY an ad was triggered ('tour' = curation tour button, 'loadMore' = pagination button)
+  // so dismissing the ad only re-curates when it makes sense.
+  const adPurposeRef = useRef<'tour' | 'loadMore' | null>(null);
 
   useEffect(() => {
     const updateTime = () => {
@@ -58,21 +63,27 @@ export default function App() {
       showAd();
     },
     onAdDismissed: () => {
-      triggerAISurpriseMatch();
+      if (adPurposeRef.current === 'tour') {
+        triggerAISurpriseMatch();
+      }
+      adPurposeRef.current = null;
     },
     onAdError: () => {
-      triggerAISurpriseMatch();
+      if (adPurposeRef.current === 'tour') {
+        triggerAISurpriseMatch();
+      }
+      adPurposeRef.current = null;
     }
   });
 
-  // Fetch all webtoons (used for genre calculations and AI context)
+  // Fetch all webtoons (used for genre calculations)
   const fetchAllWebtoons = useCallback(async () => {
     try {
-      const res = await fetch("/api/webtoons?platform=all&day=all&status=all&genre=all");
+      const res = await fetch("/api/webtoons?platform=all&day=all&status=all&genre=all&limit=9999");
       if (res.ok) {
         const data = await res.json();
         setWebtoons(data.webtoons || []);
-        
+
         // Compute unique genres dynamically
         const genresSet = new Set<string>();
         (data.webtoons || []).forEach((w: Webtoon) => {
@@ -106,7 +117,7 @@ export default function App() {
   }, []);
 
   // Fetch filtered webtoons to render in grid
-  const fetchFilteredWebtoons = useCallback(async () => {
+  const fetchFilteredWebtoons = useCallback(async (page = 1, append = false) => {
     setLoading(true);
     setError("");
     try {
@@ -117,36 +128,20 @@ export default function App() {
       if (filters.genre !== "all") params.append("genre", filters.genre);
       if (filters.price !== "all") params.append("price", filters.price);
       if (filters.searchQuery.trim()) params.append("q", filters.searchQuery);
+      params.append("page", String(page));
+      params.append("limit", "6");
+      if (curatedIds && curatedIds.length > 0) params.append("ids", curatedIds.join(","));
+      if (filters.sort !== "default") params.append("sort", filters.sort);
 
       const res = await fetch(`/api/webtoons?${params.toString()}`);
-      if (!res.ok) {
-        throw new Error("서버로부터 웹툰 목록을 가져오지 못했습니다.");
-      }
-      
+      if (!res.ok) throw new Error("서버로부터 웹툰 목록을 가져오지 못했습니다.");
+
       const data = await res.json();
       let list = data.webtoons || [];
 
-      // If active AI curation, overlay on top
-      if (curatedIds && curatedIds.length > 0) {
-        list = list.filter((w: Webtoon) => curatedIds.includes(w.id));
-      }
-
-      // Apply detailed sorting
-      if (filters.sort === "totalEpisodes") {
-        list = [...list].sort((a, b) => (b.totalEpisodes || 0) - (a.totalEpisodes || 0));
-      } else if (filters.sort === "freeEpisodes") {
-        list = [...list].sort((a, b) => (b.freeEpisodes || 0) - (a.freeEpisodes || 0));
-      } else if (filters.sort === "paidEpisodesAsc") {
-        list = [...list].sort((a, b) => (a.paidEpisodes || 0) - (b.paidEpisodes || 0));
-      } else if (filters.sort === "newest") {
-        list = [...list].sort((a, b) => {
-          if (a.isNew && !b.isNew) return -1;
-          if (!a.isNew && b.isNew) return 1;
-          return 0;
-        });
-      }
-
-      setFilteredWebtoons(list);
+      setFilteredWebtoons(prev => append ? [...prev, ...list] : list);
+      setHasMore(data.hasMore || false);
+      setCurrentPage(page);
     } catch (err: any) {
       setError(err.message || "데이터 로딩 중 에러가 발생했습니다.");
     } finally {
@@ -189,34 +184,35 @@ export default function App() {
     setCuratedIds(null);
   };
 
-  // Surprise match for Ad Curation Tour
+  // Surprise match for Ad Curation Tour (pure local random shuffle, no AI)
   const triggerAISurpriseMatch = async () => {
     try {
-      const response = await fetch("/api/webtoons?platform=all&day=all&status=all&genre=all");
+      const response = await fetch("/api/webtoons?platform=all&day=all&status=all&genre=all&limit=9999");
       const data = await response.json();
       const allList: Webtoon[] = data.webtoons || [];
       if (allList.length > 0) {
         const shuffled = [...allList].sort(() => 0.5 - Math.random());
         const selectedIds = shuffled.slice(0, 3).map(w => w.id);
-        setCuratedIds(selectedIds);
+        handleApplyCuration(selectedIds);
       }
     } catch (e) {}
   };
 
   const handleCurationTour = () => {
+    adPurposeRef.current = 'tour';
     loadAd();
   };
 
   return (
     <div className="min-h-screen bg-[#0d111a] md:py-8 flex flex-col justify-center items-center font-sans antialiased text-gray-900">
-      
+
       {/* Background abstract decoration behind the phone on desktop */}
       <div className="absolute top-10 left-10 w-96 h-96 bg-toss-blue/10 rounded-full filter blur-[120px] pointer-events-none hidden md:block" />
       <div className="absolute bottom-10 right-10 w-96 h-96 bg-indigo-500/15 rounded-full filter blur-[120px] pointer-events-none hidden md:block" />
 
       {/* Main Smartphone Mockup Frame */}
       <div className="w-full md:max-w-[420px] md:h-[860px] md:rounded-[44px] md:border-[10px] md:border-slate-900 md:shadow-[0_25px_60px_-15px_rgba(0,0,0,0.6)] md:overflow-hidden bg-white flex flex-col relative transition-all duration-500">
-        
+
         {/* Device camera notch mockup on desktop */}
         <div className="hidden md:block absolute left-1/2 -translate-x-1/2 top-1.5 w-28 h-6 bg-slate-950 rounded-full z-50 pointer-events-none flex items-center justify-end px-3">
           <div className="w-2.5 h-2.5 bg-indigo-950 rounded-full" />
@@ -262,7 +258,7 @@ export default function App() {
                 className="px-2.5 py-1.5 bg-toss-blue hover:bg-blue-600 disabled:opacity-60 text-white text-[10px] font-bold rounded-lg flex items-center gap-1 transition-all cursor-pointer"
               >
                 <Sparkles size={11} fill="currentColor" />
-                <span>투어</span>
+                <span>랜덤 추첨 받기</span>
               </button>
             </div>
           </div>
@@ -270,9 +266,9 @@ export default function App() {
 
         {/* Simulated iOS/Android Application Native Shell */}
         <div className="flex-1 overflow-y-auto bg-[#f9fafb] relative flex flex-col justify-between scrollbar-none">
-          
+
           <div className="px-4 py-4 space-y-4 flex-1">
-            
+
             {/* Surprise Curation Active Notification Banner */}
             <AnimatePresence>
               {curatedIds && (
@@ -288,9 +284,9 @@ export default function App() {
                       <Sparkles size={14} fill="currentColor" />
                     </span>
                     <div className="min-w-0">
-                      <h4 className="font-bold text-xs text-blue-900 leading-tight">AI 취향 투어 필터 가동 중!</h4>
+                      <h4 className="font-bold text-xs text-blue-900 leading-tight">랜덤 추천 중!</h4>
                       <p className="text-[10px] text-blue-700 leading-normal line-clamp-2 mt-0.5">
-                        취향 분석기가 엄선한 한정 매칭 작품들만 보이고 있습니다.
+                        랜덤 엄선 작품만 보이는 중이에요.
                       </p>
                     </div>
                   </div>
@@ -321,7 +317,10 @@ export default function App() {
                     id={`trending-tag-${w.id}`}
                     key={w.id}
                     className="px-2.5 py-1 bg-gray-50 hover:bg-gray-100 text-[10px] text-gray-600 rounded-lg font-medium cursor-pointer transition-colors whitespace-nowrap flex-shrink-0 border border-gray-100"
-                    onClick={() => setFilters({ ...filters, searchQuery: w.title })}
+                    onClick={() => {
+                      setFilters({ ...filters, searchQuery: w.title });
+                      setCuratedIds(null);
+                    }}
                   >
                     🔥 {w.title}
                   </button>
@@ -336,16 +335,13 @@ export default function App() {
               </label>
               <FilterPanel
                 settings={filters}
-                onChange={setFilters}
+                onChange={(newFilters) => {
+                  setFilters(newFilters);
+                  setCuratedIds(null);
+                }}
                 availableGenres={availableGenres}
               />
             </div>
-
-            {/* AI Guide Panel */}
-            <AIGuide
-              webtoons={webtoons}
-              onApplyCuration={handleApplyCuration}
-            />
 
             {/* Webtoons Cards Render Grid */}
             <div className="space-y-2.5 pt-2">
@@ -383,11 +379,25 @@ export default function App() {
                     <p className="text-xs font-semibold">{error}</p>
                   </motion.div>
                 ) : (
-                  <WebtoonGrid
-                    webtoons={filteredWebtoons}
-                    onResetFilters={handleResetFilters}
-                    onUpdateWebtoon={handleUpdateWebtoon}
-                  />
+                  <>
+                    <WebtoonGrid
+                      webtoons={filteredWebtoons}
+                      onResetFilters={handleResetFilters}
+                      onUpdateWebtoon={handleUpdateWebtoon}
+                    />
+                    {hasMore && (
+                      <button
+                        onClick={() => {
+                          adPurposeRef.current = 'loadMore';
+                          loadAd(); // 광고 먼저
+                          fetchFilteredWebtoons(currentPage + 1, true); // 동시에 다음 페이지 로드
+                        }}
+                        className="w-full py-3 bg-white border border-gray-200 rounded-xl text-sm font-bold text-toss-blue hover:bg-blue-50 transition-colors mt-3 cursor-pointer"
+                      >
+                        더보기 (+6개)
+                      </button>
+                    )}
+                  </>
                 )}
               </AnimatePresence>
             </div>
