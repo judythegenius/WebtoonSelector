@@ -817,7 +817,29 @@ function loadWebtoons(): any[] {
       hasChanges = true;
     }
 
-    // Smart merge: Ensure all crucial SEED_WEBTOONS (especially Kakao/KakaoPage and their updated billing info) are merged/upserted
+    // 카카오웹툰 같은 타이틀 중복 제거 (placement 여러 개 돌면서 중복 수집된 것)
+    // 동일 platform + title → webtoonId가 큰 것(최신)을 우선으로 유지
+    const kakaoByTitle = new Map<string, any>();
+    const nonKakao = list.filter(w => w.platform !== "kakao");
+    const kakaoOnly = list.filter(w => w.platform === "kakao");
+    for (const w of kakaoOnly) {
+      const key = w.title.trim();
+      const existing = kakaoByTitle.get(key);
+      if (!existing) {
+        kakaoByTitle.set(key, w);
+      } else {
+        // 두 개 중 webtoonId 큰 것 유지 (최신 수집된 것)
+        const existId = parseInt(existing.webtoonId) || 0;
+        const newId   = parseInt(w.webtoonId) || 0;
+        if (newId > existId) kakaoByTitle.set(key, w);
+      }
+    }
+    const beforeDedup = list.length;
+    list = [...nonKakao, ...Array.from(kakaoByTitle.values())];
+    if (list.length !== beforeDedup) {
+      log(`카카오웹툰 중복 제거: ${beforeDedup - list.length}개 정리됨`);
+      hasChanges = true;
+    }
     SEED_WEBTOONS.forEach(seedItem => {
       const existingIdx = list.findIndex(w => w.id === seedItem.id);
       if (existingIdx === -1) {
@@ -942,35 +964,90 @@ const LOCAL_GENRE_MAP: Record<string, string[]> = {
   "가짜 동맹": ["로맨스/순정", "학원", "드라마"],
   "스위트홈": ["스릴러", "판타지"],
   "타인은 지옥이다": ["스릴러", "미스터리"],
-  "유미의 세포들": ["로맨스/순정", "일상", "개그"]
+  "유미의 세포들": ["로맨스/순정", "일상", "개그"],
+  "마흔 즈음에": ["드라마", "일상", "개그"],
+  "방구석 재민이": ["일상", "개그"],
+  "99강화나무몽둥이": ["판타지", "액션", "개그"],
+  "폭풍의 전학생": ["학원", "개그"],
+  "동생 왔다": ["일상", "개그"],
+  "극한견주": ["일상", "개그"],
+  "뇌전증 일기": ["일상", "개그"],
+  "땅콩일기": ["일상", "개그"],
+  "신체": ["개그", "일상"],
 };
 
 // Auto guess genre based on words in title
 function guessGenreByTitle(title: string): string[] {
-  // Check exact/partial local map
+  // 1. 정확한 타이틀 매칭
   for (const key of Object.keys(LOCAL_GENRE_MAP)) {
     if (title.includes(key) || key.includes(title)) {
       return LOCAL_GENRE_MAP[key];
     }
   }
 
-  // Text hints
-  if (title.match(/레벨업|귀환|빙의|헌터|용사|마왕|판타지|아카데미|소환사|스킬|SSS|탑|탑|던전|영주|드래곤|검사/)) {
-    return ["판타지", "액션"];
+  // 2. 키워드 기반 추론 (복수 장르 반환)
+  const genres: string[] = [];
+
+  // 개그/일상
+  if (title.match(/일기|생활|브이로그|관찰기|썰|아저씨|아줌마|주부|백수|직장인|사원|대리|과장|부장|사장|알바|알바생|편의점|카페|식당|요리사|요리|먹방|맛집|반려|강아지|고양이|고냥이|집사|개잡이|개키우|냥이|냥집사/)) {
+    genres.push("일상");
   }
-  if (title.match(/연애|사랑|너와|그녀|로맨스/)) {
-    return ["로맨스/순정"];
+  if (title.match(/개그|코믹|웃음|웃긴|병맛|망가|개소리|허당|눈치|눈치없|4컷|4칸|유머|개판|황당|어이없|웃대|빵터|빵빵|키득/)) {
+    genres.push("개그", "일상");
   }
-  if (title.match(/살인|죽여|죽는|피|복수|감옥|범죄|스릴러|귀신|지옥|악마/)) {
-    return ["스릴러", "드라마"];
+
+  // 로맨스/순정
+  if (title.match(/연애|사랑|너와|그녀|남자친구|여자친구|썸|설레|두근|고백|키스|남친|여친|남편|아내|부부|결혼|혼인|약혼|프러포즈|로맨스|순정|달달|달콤|핑크/)) {
+    genres.push("로맨스/순정");
   }
-  if (title.match(/일기|생활|학교|학생|학원|일상/)) {
-    return ["일상", "학원"];
+
+  // 로판 (로맨스+판타지)
+  if (title.match(/황녀|공주|황후|왕비|귀족|백작|공작|후작|남작|영애|아가씨|소저|빙의|환생|회귀.*황|황.*회귀|궁|황궁|이세계.*여|여.*이세계/)) {
+    genres.push("로맨스/순정", "판타지");
   }
-  if (title.match(/야구|축구|농구|달리기|복싱|격투|스포츠/)) {
-    return ["스포츠", "드라마"];
+
+  // 판타지/액션
+  if (title.match(/레벨업|귀환|빙의|헌터|용사|마왕|마법사|아카데미|소환사|스킬|SSS|던전|영주|드래곤|검사|검객|무사|기사|마검|성기사|성검|성배|용기사|신수|엘프|오크|몬스터|이세계|차원|게이트|리셋|리플레이|회귀|환생|전생|탑|클리어|플레이어|랭커|랭킹|최강|무적|불사|불멸|제왕|마제|천재|천마|신화/)) {
+    genres.push("판타지", "액션");
   }
-  
+
+  // 무협
+  if (title.match(/무림|강호|협객|문파|장문인|장로|사부|사형|사매|천마|마교|정파|사파|검법|검결|검기|검강|내공|기공|무공|신공|절기|밀기|비급|천하|강산|협|의협|쾌협|대협|협도|강자|고수|전설|소설|무협/)) {
+    genres.push("무협", "액션");
+  }
+
+  // 스릴러/미스터리
+  if (title.match(/살인|죽여|죽이|피|복수|감옥|범죄|범인|탐정|형사|경찰|수사|공포|귀신|유령|저주|오컬트|미스터리|추리|의문|실종|납치|감금|스토커|사이코|연쇄|지옥|악마|악귀|빙의귀|공포증/)) {
+    genres.push("스릴러");
+  }
+
+  // 학원
+  if (title.match(/학교|학생|중학|고등|대학|학원|교실|선생|교사|교수|입학|졸업|수험|입시|동아리|학과|청춘|10대/)) {
+    genres.push("학원");
+  }
+
+  // 스포츠
+  if (title.match(/야구|축구|농구|배구|테니스|달리기|마라톤|수영|복싱|격투|격투기|무도|유도|태권|검도|씨름|레슬링|스포츠|선수|감독|코치|팀|리그|토너먼트|경기|시합|대회|우승|챔피언/)) {
+    genres.push("스포츠", "드라마");
+  }
+
+  // BL
+  if (title.match(/BL|보이즈러브|남남|형×제|형제×|순×|순정×남/)) {
+    genres.push("BL");
+  }
+
+  // 의학
+  if (title.match(/의사|의대|병원|환자|수술|간호사|간호|응급|진단|치료|암|종양|외과|내과|정형|신경외과|흉부|이비인후|피부과|정신과|의학/)) {
+    genres.push("의학", "드라마");
+  }
+
+  // 힐링
+  if (title.match(/힐링|위로|쉬어가|따뜻|포근|느긋|귀농|귀촌|전원|자연|숲속|시골|농사|텃밭|정원|카페|카페인|음식|요리|소소|작은|느린|여유|산책|여행/)) {
+    if (!genres.includes("일상")) genres.push("일상");
+    genres.push("힐링");
+  }
+
+  if (genres.length > 0) return [...new Set(genres)];
   return ["드라마"]; // Default fallback
 }
 
@@ -1101,13 +1178,30 @@ app.get("/api/webtoons", (req, res) => {
     }
   }
 
-// Filter: genre
-if (genre && genre !== "all") {
-  const genreStr = String(genre);
-  if (genreStr === "18+") {
-    webtoons = webtoons.filter(w => w.isAdult === true);
+// Filter: genres (OR, 멀티선택)
+const GENRE_NORMALIZE: Record<string, string> = {
+  ACTION_WUXIA:          "무협",
+  COMIC_EVERYDAY_LIFE:   "일상",
+  FANTASY_DRAMA:         "판타지",
+  HORROR_THRILLER:       "스릴러",
+  SCHOOL_ACTION_FANTASY: "학원/액션",
+  BL:                    "BL",
+};
+const normalizeGenre = (g: string) => GENRE_NORMALIZE[g] ?? g;
+
+const genresParam = req.query.genres as string | undefined;
+if (genresParam) {
+  const selectedGenres = genresParam.split(",").map(g => g.trim()).filter(Boolean);
+  if (selectedGenres.includes("18+")) {
+    const others = selectedGenres.filter(g => g !== "18+");
+    webtoons = webtoons.filter(w =>
+      w.isAdult === true ||
+      (others.length > 0 && w.genres && w.genres.some((g: string) => others.includes(normalizeGenre(g))))
+    );
   } else {
-    webtoons = webtoons.filter(w => w.genres && w.genres.some((g: string) => g.includes(genreStr) || genreStr.includes(g)));
+    webtoons = webtoons.filter(w =>
+      w.genres && w.genres.some((g: string) => selectedGenres.includes(normalizeGenre(g)))
+    );
   }
 }
 
@@ -1501,8 +1595,11 @@ function normalizeGenreLabel(genre: string): string {
 app.post("/api/admin/enrich", async (req, res) => {
   try {
     const webtoons = loadWebtoons();
-    // Filter webtoons that have empty or unset genres
-    const targets = webtoons.filter(w => !w.genres || w.genres.length === 0);
+    // 장르 없거나, 드라마 단일(guessGenreByTitle 폴백)인 경우 모두 보강 대상
+    const targets = webtoons.filter(w =>
+      !w.genres || w.genres.length === 0 ||
+      (w.genres.length === 1 && w.genres[0] === "드라마")
+    );
     
     if (targets.length === 0) {
       log("모든 웹툰의 장르가 이미 확보되어 있습니다. 보강할 대상이 없습니다.");
@@ -1625,109 +1722,219 @@ app.post("/api/admin/crawl-kakaopage", async (req, res) => {
     const webtoons = loadWebtoons();
     const existingIds = new Set(webtoons.map(w => w.id));
     let addedCount = 0;
+    let bffSuccess = false;
 
+    // ── 전략 1: bff-page.kakao.com (공식, 토큰 없을 때 403 날 수 있음) ──
     const DAY_MAP: Record<string, string> = {
       "월": "MON", "화": "TUE", "수": "WED", "목": "THU",
       "금": "FRI", "토": "SAT", "일": "SUN"
     };
-
-    const GENRE_MAP: Record<string, string> = {
-      "로판": "로맨스/순정", "로맨스": "로맨스/순정", "판타지": "판타지",
-      "액션": "액션", "드라마": "드라마", "무협": "무협",
-      "스릴러": "스릴러", "개그": "개그", "일상": "일상", "학원": "학원"
+    const KPAGE_GENRE_MAP: Record<string, string[]> = {
+      "로판":     ["로맨스/순정", "판타지"],
+      "로맨스":   ["로맨스/순정"],
+      "판타지":   ["판타지"],
+      "액션":     ["액션"],
+      "드라마":   ["드라마"],
+      "무협":     ["무협"],
+      "스릴러":   ["스릴러"],
+      "공포":     ["공포", "스릴러"],
+      "개그":     ["개그"],
+      "일상":     ["일상"],
+      "학원":     ["학원"],
+      "BL":       ["BL"],
+      "GL":       ["GL"],
+      "스포츠":   ["스포츠"],
+      "미스터리": ["미스터리"],
+      "의학":     ["의학"],
+      "아이돌":   ["아이돌"],
+      "힐링":     ["일상", "힐링"],
     };
 
-    // 요일별 page=0~9 까지 수집
-    for (let page = 0; page <= 9; page++) {
-      try {
-        const url = `https://bff-page.kakao.com/api/gateway/view/v2/landing/dayofweek?category_uid=10&page=${page}&screen_uid=52`;
+    const parseBffItem = (item: any): any | null => {
+      if (!item?.series_id) return null;
+      const rawId = String(item.series_id);
+      const compositeId = `kakaoPage_${rawId}`;
+      if (existingIds.has(compositeId)) return null;
+      existingIds.add(compositeId);
 
+      const cardImg = item.asset_property?.card_img || "";
+      const thumbnail = cardImg
+        ? `https://dn-img-page.kakao.com/download/resource?kid=${cardImg}&filename=th3`
+        : "";
+
+      const pubPeriod = item.pub_period || "";
+      const isEnd = item.state === "ST60" || pubPeriod === "완결";
+      const updateDays = isEnd
+        ? ["finished"]
+        : pubPeriod.split(",").map((d: string) => DAY_MAP[d.trim()] || d.trim()).filter(Boolean);
+
+      const rawGenreSources: string[] = [
+        item.sub_category,
+        ...(item.genre_tags || []),
+        ...(item.tags || []),
+      ].filter(Boolean);
+      const genres: string[] = [...new Set(
+        rawGenreSources.flatMap((g: string) => KPAGE_GENRE_MAP[g] || [g])
+      )].filter(Boolean);
+
+      const isDailyPass = !!item.is_waitfree;
+      return {
+        id: compositeId,
+        webtoonId: rawId,
+        title: item.title || "제목 없음",
+        author: item.authors || "작가 미상",
+        img: thumbnail,
+        url: `https://page.kakao.com/content/${rawId}`,
+        updateDays: updateDays.length > 0 ? updateDays : ["unknown"],
+        isEnd,
+        isNew: false,
+        isUp: false,
+        platform: "kakaoPage",
+        genres: genres.length > 0 ? genres : ["드라마"],
+        isFree: !!item.is_all_free,
+        isDailyPass,
+        dailyPassDuration: item.waitfree_period_by_minute
+          ? Math.round(item.waitfree_period_by_minute / 60)
+          : 24,
+        freeEpisodes: item.free_slide_count || 0,
+        isAdult: (item.age_grade || 0) >= 18,
+      };
+    };
+
+    // bff-page 요일별 + 완결 수집
+    const BFF_ENDPOINTS = [
+      `https://bff-page.kakao.com/api/gateway/view/v2/landing/dayofweek?category_uid=10&page=0&screen_uid=52`,
+      `https://bff-page.kakao.com/api/gateway/view/v2/landing/dayofweek?category_uid=10&page=1&screen_uid=52`,
+      `https://bff-page.kakao.com/api/gateway/view/v2/landing/dayofweek?category_uid=10&page=2&screen_uid=52`,
+      `https://bff-page.kakao.com/api/gateway/view/v2/landing/dayofweek?category_uid=10&page=3&screen_uid=52`,
+      `https://bff-page.kakao.com/api/gateway/view/v2/landing/dayofweek?category_uid=10&page=4&screen_uid=52`,
+      `https://bff-page.kakao.com/api/gateway/view/v2/landing/complete?category_uid=10&page=0&screen_uid=52`,
+      `https://bff-page.kakao.com/api/gateway/view/v2/landing/complete?category_uid=10&page=1&screen_uid=52`,
+      `https://bff-page.kakao.com/api/gateway/view/v2/landing/complete?category_uid=10&page=2&screen_uid=52`,
+    ];
+
+    for (const url of BFF_ENDPOINTS) {
+      try {
         const apiRes = await fetch(url, {
           headers: {
             "accept": "application/json, text/plain, */*",
-            "accept-language": "ko",
+            "accept-language": "ko-KR,ko;q=0.9",
             "origin": "https://page.kakao.com",
             "referer": "https://page.kakao.com/",
-            "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
           },
         });
-
         if (!apiRes.ok) {
-          log(`[카카오페이지] page=${page} 실패: ${apiRes.status}`);
-          break;
+          log(`[카카오페이지 bff] ${url.split("?")[1]} 실패: ${apiRes.status}`);
+          continue;
         }
-
+        bffSuccess = true;
         const data = await apiRes.json();
         const list = data?.result?.list || [];
-
-        if (list.length === 0) {
-          log(`[카카오페이지] page=${page} 데이터 없음 - 종료`);
-          break;
-        }
-
         for (const item of list) {
-          const rawId = String(item.series_id);
+          const entry = parseBffItem(item);
+          if (entry) { webtoons.push(entry); addedCount++; }
+        }
+        await new Promise(r => setTimeout(r, 200));
+      } catch (e: any) {
+        log(`[카카오페이지 bff 에러] ${e.message}`);
+      }
+    }
+
+    log(`[카카오페이지 bff] ${bffSuccess ? `수집 완료 ${addedCount}건` : "전체 실패 → 네이버 검색 fallback으로 전환"}`);
+
+    // ── 전략 2: 네이버 검색 API fallback (bff가 막혔을 때 + 항상 보강) ──
+    // 장르 키워드 × 연재상태 조합으로 page.kakao.com 링크를 최대한 긁어옴
+    const SEARCH_QUERIES = [
+      "카카오페이지 판타지 웹툰 추천",
+      "카카오페이지 로맨스 웹툰 추천",
+      "카카오페이지 무협 웹툰 추천",
+      "카카오페이지 액션 웹툰 추천",
+      "카카오페이지 드라마 웹툰 추천",
+      "카카오페이지 스릴러 웹툰 추천",
+      "카카오페이지 BL 웹툰 추천",
+      "카카오페이지 일상 웹툰 추천",
+      "카카오페이지 완결 판타지 웹툰",
+      "카카오페이지 완결 무협 웹툰",
+      "카카오페이지 완결 로맨스 웹툰",
+      "카카오페이지 신작 웹툰 2024",
+      "카카오페이지 인기 웹툰 순위",
+      "카카오페이지 기다리면 무료 웹툰",
+      "page.kakao.com 웹툰 연재",
+    ];
+
+    const GENRE_KEYWORD_MAP: Record<string, string[]> = {
+      "판타지": ["판타지"],
+      "로맨스": ["로맨스/순정"],
+      "무협":   ["무협"],
+      "액션":   ["액션"],
+      "드라마": ["드라마"],
+      "스릴러": ["스릴러"],
+      "BL":     ["BL"],
+      "일상":   ["일상"],
+    };
+
+    const ID_PATTERN = /page\.kakao\.com\/content\/(\d+)/;
+
+    let naverAddedCount = 0;
+    for (const query of SEARCH_QUERIES) {
+      try {
+        const items = await searchNaverWeb(query, 20);
+        for (const item of items) {
+          const m = item.link.match(ID_PATTERN);
+          if (!m) continue;
+          const rawId = m[1];
           const compositeId = `kakaoPage_${rawId}`;
           if (existingIds.has(compositeId)) continue;
           existingIds.add(compositeId);
 
-          // 이미지 URL 조합
-          const cardImg = item.asset_property?.card_img || "";
-          const thumbnail = cardImg
-            ? `https://dn-img-page.kakao.com/download/resource?kid=${cardImg}&filename=th3`
-            : "";
+          // 제목 정제
+          const title = item.title.replace(/<[^>]+>/g, "").trim();
+          if (!title) continue;
 
-          // 요일 매핑
-          const pubPeriod = item.pub_period || "";
-          const isEnd = item.state === "ST60" || pubPeriod === "완결";
-          const updateDays = isEnd
-            ? ["finished"]
-            : pubPeriod.split(",").map((d: string) => DAY_MAP[d.trim()] || d.trim()).filter(Boolean);
+          // 쿼리에서 장르 힌트 추출
+          let genres: string[] = ["드라마"];
+          for (const [kw, mapped] of Object.entries(GENRE_KEYWORD_MAP)) {
+            if (query.includes(kw)) { genres = mapped; break; }
+          }
+          // 제목 기반 추가 추정
+          const guessed = guessGenreByTitle(title);
+          genres = [...new Set([...genres, ...guessed])];
 
-          // 장르
-          const subCategory = item.sub_category || "";
-          const genre = GENRE_MAP[subCategory] || subCategory || "드라마";
-
-          // 작가
-          const author = item.authors || "작가 미상";
-
-          const isDailyPass = !!item.is_waitfree;
-          const dailyPassDuration = item.waitfree_period_by_minute
-            ? Math.round(item.waitfree_period_by_minute / 60)
-            : 24;
+          const isEnd = query.includes("완결") ||
+            item.description?.includes("완결") || false;
 
           webtoons.push({
             id: compositeId,
             webtoonId: rawId,
-            title: item.title || "제목 없음",
-            author,
-            img: thumbnail,
+            title,
+            author: "작가 미상",
+            img: "",          // update-info로 나중에 채움
             url: `https://page.kakao.com/content/${rawId}`,
-            updateDays: updateDays.length > 0 ? updateDays : ["unknown"],
+            updateDays: isEnd ? ["finished"] : ["unknown"],
             isEnd,
             isNew: false,
             isUp: false,
             platform: "kakaoPage",
-            genres: [genre],
-            isFree: !!item.is_all_free,
-            isDailyPass,
-            dailyPassDuration,
-            freeEpisodes: item.free_slide_count || 0,
-            isAdult: item.age_grade >= 18,  // ← 추가
+            genres,
+            isFree: false,
+            isDailyPass: true,
+            dailyPassDuration: 24,
           });
-          addedCount++;
-          log(`[카카오페이지] 추가: ${item.title} (${rawId})`);
+          naverAddedCount++;
         }
-
-        await new Promise(r => setTimeout(r, 300));
+        await new Promise(r => setTimeout(r, 150));
       } catch (e: any) {
-        log(`[카카오페이지 에러] page=${page}: ${e.message}`);
+        log(`[카카오페이지 네이버검색 에러] ${query}: ${e.message}`);
       }
     }
 
+    log(`[카카오페이지 네이버검색] 추가 ${naverAddedCount}건`);
+    addedCount += naverAddedCount;
+
     saveWebtoons(webtoons);
     log(`[카카오페이지 완료] 신규 ${addedCount}건. 총 ${webtoons.length}건`);
-    res.json({ success: true, added: addedCount, total: webtoons.length });
+    res.json({ success: true, added: addedCount, total: webtoons.length, bffSuccess });
 
   } catch (err: any) {
     res.status(500).json({ success: false, error: err.message });
@@ -1753,18 +1960,26 @@ app.post("/api/admin/crawl-kakao", async (req, res) => {
       { key: "timetable_completed", day: "finished", isEnd: true  },
     ];
 
-    const GENRE_MAP: Record<string, string> = {
-      ROMANCE:          "로맨스/순정",
-      ROMANCE_FANTASY:  "로맨스/순정",
-      FANTASY:          "판타지",
-      ACTION:           "액션",
-      DRAMA:            "드라마",
-      THRILLER:         "스릴러",
-      COMEDY:           "개그",
-      MARTIAL_ARTS:     "무협",
-      SPORTS:           "스포츠",
-      SLICE_OF_LIFE:    "일상",
-      SCHOOL:           "학원",
+    // 영어코드 → 복합 장르 배열 (OR 필터에서 모두 매칭되도록)
+    const GENRE_MAP: Record<string, string[]> = {
+      ROMANCE:               ["로맨스/순정"],
+      ROMANCE_FANTASY:       ["로맨스/순정", "판타지"],
+      FANTASY:               ["판타지"],
+      ACTION:                ["액션"],
+      DRAMA:                 ["드라마"],
+      THRILLER:              ["스릴러"],
+      COMEDY:                ["개그"],
+      MARTIAL_ARTS:          ["무협"],
+      SPORTS:                ["스포츠"],
+      SLICE_OF_LIFE:         ["일상"],
+      SCHOOL:                ["학원"],
+      // 누락됐던 복합 코드들
+      FANTASY_DRAMA:         ["판타지", "드라마"],
+      ACTION_WUXIA:          ["액션", "무협"],
+      SCHOOL_ACTION_FANTASY: ["학원", "액션", "판타지"],
+      HORROR_THRILLER:       ["공포", "스릴러"],
+      COMIC_EVERYDAY_LIFE:   ["개그", "일상"],
+      BL:                    ["BL"],
     };
 
     for (const placement of PLACEMENTS) {
@@ -1816,9 +2031,11 @@ app.post("/api/admin/crawl-kakao", async (req, res) => {
               const seoId = content.seoId || encodeURIComponent(content.title || rawId);
               const webtoonUrl = `https://webtoon.kakao.com/content/${seoId}/${rawId}`;
 
-              // 장르: genreFilters에서 "all" 제외하고 매핑
+              // 장르: genreFilters에서 "all" 제외 → 복합 배열로 펼치기 → 중복 제거
               const genreKeys = (card.genreFilters || []).filter((g: string) => g !== "all");
-              const genres    = genreKeys.map((g: string) => GENRE_MAP[g] || g).filter(Boolean);
+              const genres = [...new Set(
+                genreKeys.flatMap((g: string) => GENRE_MAP[g] || [g])
+              )].filter(Boolean);
 
               // 기다무 여부
               const isDailyPass = content.badges?.some((b: any) => b.title === "WAIT_FOR_FREE") || false;
@@ -2216,6 +2433,98 @@ app.post("/api/admin/clean-kakao", (req, res) => {
     saveWebtoons(cleaned);
     log(`[정리 완료] ${before}건 → ${cleaned.length}건 (${before - cleaned.length}건 제거)`);
     res.json({ success: true, before, after: cleaned.length, removed: before - cleaned.length });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// ── 장르 일괄 정규화 (영어코드 → 한국어, 드라마 단일 → guessGenreByTitle 재추론) ──
+app.post("/api/admin/fix-genres", (req, res) => {
+  try {
+    const webtoons = loadWebtoons();
+
+    const ENG_TO_KO: Record<string, string[]> = {
+      ROMANCE:               ["로맨스/순정"],
+      ROMANCE_FANTASY:       ["로맨스/순정", "판타지"],
+      FANTASY:               ["판타지"],
+      ACTION:                ["액션"],
+      DRAMA:                 ["드라마"],
+      THRILLER:              ["스릴러"],
+      COMEDY:                ["개그"],
+      MARTIAL_ARTS:          ["무협"],
+      SPORTS:                ["스포츠"],
+      SLICE_OF_LIFE:         ["일상"],
+      SCHOOL:                ["학원"],
+      FANTASY_DRAMA:         ["판타지", "드라마"],
+      ACTION_WUXIA:          ["액션", "무협"],
+      SCHOOL_ACTION_FANTASY: ["학원", "액션", "판타지"],
+      HORROR_THRILLER:       ["공포", "스릴러"],
+      COMIC_EVERYDAY_LIFE:   ["개그", "일상"],
+      BL:                    ["BL"],
+    };
+
+    let fixedEngCount    = 0; // 영어코드 → 한국어
+    let fixedDramaCount  = 0; // 드라마 단일 → 재추론
+    let dedupCount       = 0; // 카카오 중복 제거
+
+    // 1. 카카오웹툰 중복 제거 (같은 title, 낮은 webtoonId 제거)
+    const nonKakao  = webtoons.filter(w => w.platform !== "kakao");
+    const kakaoOnly = webtoons.filter(w => w.platform === "kakao");
+    const kakaoMap  = new Map<string, any>();
+    for (const w of kakaoOnly) {
+      const key = w.title.trim();
+      const existing = kakaoMap.get(key);
+      if (!existing) {
+        kakaoMap.set(key, w);
+      } else {
+        const existId = parseInt(existing.webtoonId) || 0;
+        const newId   = parseInt(w.webtoonId) || 0;
+        if (newId > existId) kakaoMap.set(key, w);
+        dedupCount++;
+      }
+    }
+    const deduped = [...nonKakao, ...Array.from(kakaoMap.values())];
+
+    // 2. 영어코드 → 한국어 변환 + 드라마 단일 → 재추론
+    const fixed = deduped.map(w => {
+      const rawGenres: string[] = w.genres || [];
+
+      // 영어코드 포함 여부 확인
+      const hasEngCode = rawGenres.some(g => ENG_TO_KO[g]);
+
+      if (hasEngCode) {
+        // 영어코드 → 복합 배열로 펼치기 후 중복 제거
+        const normalized = [...new Set(
+          rawGenres.flatMap(g => ENG_TO_KO[g] || [g])
+        )].filter(Boolean);
+        fixedEngCount++;
+        return { ...w, genres: normalized };
+      }
+
+      // 드라마 단일 폴백 → 타이틀 기반 재추론
+      if (rawGenres.length === 1 && rawGenres[0] === "드라마") {
+        const guessed = guessGenreByTitle(w.title || "");
+        if (guessed.length > 0 && !(guessed.length === 1 && guessed[0] === "드라마")) {
+          fixedDramaCount++;
+          return { ...w, genres: guessed };
+        }
+      }
+
+      return w;
+    });
+
+    saveWebtoons(fixed);
+
+    const summary = {
+      success: true,
+      총작품수: fixed.length,
+      영어코드정규화: fixedEngCount,
+      드라마재추론: fixedDramaCount,
+      카카오중복제거: dedupCount,
+    };
+    log(`[fix-genres] ${JSON.stringify(summary)}`);
+    res.json(summary);
+
   } catch (err: any) {
     res.status(500).json({ success: false, error: err.message });
   }

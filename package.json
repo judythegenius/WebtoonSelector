@@ -3,13 +3,14 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "scripts": {
-    "dev": "tsx server.ts",
-    "build": "vite build && esbuild server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs",
-    "start": "node dist/server.cjs",
-    "clean": "rm -rf dist data/webtoons.json",
-    "lint": "tsc --noEmit"
-  },
+"scripts": {
+  "start": "node dist/server.cjs",
+  "predev": "npx kill-port 3000",
+  "dev": "tsx server.ts",
+  "build": "vite build && esbuild server.ts --bundle --platform=...",
+  "clean": "rm -rf dist data/webtoons.json",
+  "lint": "tsc --noEmit"
+},
   "dependencies": {
     "@google/genai": "^2.4.0",
     "@tailwindcss/vite": "^4.1.14",
@@ -19,7 +20,7 @@
     "lucide-react": "^0.546.0",
     "motion": "^12.23.24",
     "react": "^19.0.1",
-    "react-dom": "^19.0.1",
+    "react-dom": "^19.0.1", 
     "vite": "^6.2.3"
   },
   "devDependencies": {

@@ -11,7 +11,7 @@ const INITIAL_FILTERS: FilterSettings = {
   platform: "all",
   day: "all",
   status: "all",
-  genre: "all",
+  genres: [],
   searchQuery: "",
   price: "all",
   sort: "default"
@@ -20,6 +20,7 @@ const INITIAL_FILTERS: FilterSettings = {
 export default function App() {
   const [webtoons, setWebtoons] = useState<Webtoon[]>([]);
   const [filteredWebtoons, setFilteredWebtoons] = useState<Webtoon[]>([]);
+  const [totalCount, setTotalCount] = useState<number>(0);
   const [filters, setFilters] = useState<FilterSettings>(INITIAL_FILTERS);
   const [availableGenres, setAvailableGenres] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
@@ -125,7 +126,7 @@ export default function App() {
       if (filters.platform !== "all") params.append("platform", filters.platform);
       if (filters.day !== "all") params.append("day", filters.day);
       if (filters.status !== "all") params.append("status", filters.status);
-      if (filters.genre !== "all") params.append("genre", filters.genre);
+      if (filters.genres && filters.genres.length > 0) params.append("genres", filters.genres.join(","));
       if (filters.price !== "all") params.append("price", filters.price);
       if (filters.searchQuery.trim()) params.append("q", filters.searchQuery);
       params.append("page", String(page));
@@ -141,6 +142,7 @@ export default function App() {
 
       setFilteredWebtoons(prev => append ? [...prev, ...list] : list);
       setHasMore(data.hasMore || false);
+      setTotalCount(data.total ?? (append ? filteredWebtoons.length + list.length : list.length));
       setCurrentPage(page);
     } catch (err: any) {
       setError(err.message || "데이터 로딩 중 에러가 발생했습니다.");
@@ -346,8 +348,17 @@ export default function App() {
             {/* Webtoons Cards Render Grid */}
             <div className="space-y-2.5 pt-2">
               <div className="flex justify-between items-center px-1">
-                <span className="text-[10px] font-extrabold text-gray-400 uppercase tracking-wider">웹툰 취향 검색 결과</span>
-                {(filters.platform !== "all" || filters.day !== "all" || filters.status !== "all" || filters.genre !== "all" || filters.price !== "all" || filters.searchQuery) && (
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-extrabold text-gray-400 uppercase tracking-wider">웹툰 취향 검색 결과</span>
+                  {totalCount > 0 && (
+                    <span className="text-[11px] font-black text-toss-blue">
+                      {filteredWebtoons.length < totalCount
+                        ? `${filteredWebtoons.length} / ${totalCount.toLocaleString()}개`
+                        : `총 ${totalCount.toLocaleString()}개`}
+                    </span>
+                  )}
+                </div>
+                {(filters.platform !== "all" || filters.day !== "all" || filters.status !== "all" || (filters.genres && filters.genres.length > 0) || filters.price !== "all" || filters.searchQuery) && (
                   <button
                     id="reset-filters-btn-sub"
                     onClick={handleResetFilters}
@@ -389,12 +400,12 @@ export default function App() {
                       <button
                         onClick={() => {
                           adPurposeRef.current = 'loadMore';
-                          loadAd(); // 광고 먼저
-                          fetchFilteredWebtoons(currentPage + 1, true); // 동시에 다음 페이지 로드
+                          loadAd();
+                          fetchFilteredWebtoons(currentPage + 1, true);
                         }}
                         className="w-full py-3 bg-white border border-gray-200 rounded-xl text-sm font-bold text-toss-blue hover:bg-blue-50 transition-colors mt-3 cursor-pointer"
                       >
-                        더보기 (+6개)
+                        더보기 {totalCount > 0 && `(${Math.min(6, totalCount - filteredWebtoons.length)}개 더 · 총 ${totalCount.toLocaleString()}개)`}
                       </button>
                     )}
                   </>
