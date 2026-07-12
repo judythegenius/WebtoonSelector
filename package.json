@@ -7,7 +7,7 @@
   "start": "node dist/server.cjs",
   "predev": "npx kill-port 3000",
   "dev": "tsx server.ts",
-  "build": "vite build && esbuild server.ts --bundle --platform=...",
+  "build": "vite build && esbuild server.ts --bundle --platform=node --outfile=dist/server.js --external:express",
   "clean": "rm -rf dist data/webtoons.json",
   "lint": "tsc --noEmit"
 },

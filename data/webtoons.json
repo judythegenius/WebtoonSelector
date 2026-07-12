@@ -412,7 +412,8 @@
     "isFree": true,
     "platform": "naver",
     "genres": [
-      "드라마"
+      "판타지",
+      "액션"
     ],
     "isAdult": false
   },
@@ -605,7 +606,8 @@
     "isFree": true,
     "platform": "naver",
     "genres": [
-      "드라마"
+      "판타지",
+      "액션"
     ],
     "isAdult": false
   },
@@ -689,7 +691,8 @@
     "isFree": true,
     "platform": "naver",
     "genres": [
-      "드라마"
+      "판타지",
+      "액션"
     ],
     "isAdult": false
   },
@@ -731,7 +734,8 @@
     "isFree": true,
     "platform": "naver",
     "genres": [
-      "드라마"
+      "판타지",
+      "액션"
     ],
     "isAdult": false
   },
@@ -1072,7 +1076,7 @@
     "isFree": true,
     "platform": "naver",
     "genres": [
-      "드라마"
+      "로맨스/순정"
     ],
     "isAdult": false
   },
@@ -1242,7 +1246,7 @@
     "isFree": true,
     "platform": "naver",
     "genres": [
-      "드라마"
+      "학원"
     ],
     "isAdult": false
   },
@@ -2306,7 +2310,8 @@
     "isFree": true,
     "platform": "naver",
     "genres": [
-      "드라마"
+      "판타지",
+      "액션"
     ],
     "isAdult": false
   },
@@ -2989,7 +2994,8 @@
     "isFree": true,
     "platform": "naver",
     "genres": [
-      "드라마"
+      "판타지",
+      "액션"
     ],
     "isAdult": false
   },
@@ -3266,7 +3272,9 @@
     "isFree": true,
     "platform": "naver",
     "genres": [
-      "드라마"
+      "판타지",
+      "액션",
+      "무협"
     ],
     "isAdult": false
   },
@@ -3288,7 +3296,7 @@
     "isFree": true,
     "platform": "naver",
     "genres": [
-      "드라마"
+      "로맨스/순정"
     ],
     "isAdult": false
   },
@@ -3414,7 +3422,8 @@
     "isFree": true,
     "platform": "naver",
     "genres": [
-      "드라마"
+      "판타지",
+      "액션"
     ],
     "isAdult": false
   },
@@ -3457,7 +3466,8 @@
     "isFree": true,
     "platform": "naver",
     "genres": [
-      "드라마"
+      "무협",
+      "액션"
     ],
     "isAdult": false
   },
@@ -3541,7 +3551,8 @@
     "isFree": true,
     "platform": "naver",
     "genres": [
-      "드라마"
+      "판타지",
+      "액션"
     ],
     "isAdult": false
   },
@@ -3923,7 +3934,8 @@
     "isFree": true,
     "platform": "naver",
     "genres": [
-      "드라마"
+      "판타지",
+      "액션"
     ],
     "isAdult": false
   },
@@ -3944,7 +3956,8 @@
     "isFree": true,
     "platform": "naver",
     "genres": [
-      "드라마"
+      "판타지",
+      "액션"
     ],
     "isAdult": false
   },
@@ -4604,7 +4617,7 @@
     "isFree": true,
     "platform": "naver",
     "genres": [
-      "드라마"
+      "로맨스/순정"
     ],
     "isAdult": false
   },
@@ -4731,7 +4744,8 @@
     "isFree": true,
     "platform": "naver",
     "genres": [
-      "드라마"
+      "판타지",
+      "액션"
     ],
     "isAdult": false
   },
@@ -4858,7 +4872,8 @@
     "isFree": true,
     "platform": "naver",
     "genres": [
-      "드라마"
+      "판타지",
+      "액션"
     ],
     "isAdult": false
   },
@@ -5111,7 +5126,7 @@
     "isFree": true,
     "platform": "naver",
     "genres": [
-      "드라마"
+      "로맨스/순정"
     ],
     "isAdult": false
   },
@@ -5259,7 +5274,7 @@
     "isFree": true,
     "platform": "naver",
     "genres": [
-      "드라마"
+      "일상"
     ],
     "isAdult": true
   },
@@ -5430,7 +5445,9 @@
     "isFree": true,
     "platform": "naver",
     "genres": [
-      "드라마"
+      "일상",
+      "판타지",
+      "액션"
     ],
     "isAdult": false
   },
@@ -5580,7 +5597,8 @@
     "isFree": true,
     "platform": "naver",
     "genres": [
-      "드라마"
+      "판타지",
+      "액션"
     ],
     "isAdult": false
   },
@@ -5900,7 +5918,8 @@
     "isFree": true,
     "platform": "naver",
     "genres": [
-      "드라마"
+      "판타지",
+      "액션"
     ],
     "isAdult": false
   },
@@ -6239,7 +6258,8 @@
     "isFree": true,
     "platform": "naver",
     "genres": [
-      "드라마"
+      "판타지",
+      "액션"
     ],
     "isAdult": false
   },
@@ -6577,7 +6597,8 @@
     "isFree": true,
     "platform": "naver",
     "genres": [
-      "드라마"
+      "판타지",
+      "액션"
     ],
     "isAdult": false
   },
@@ -7106,7 +7127,8 @@
     "isFree": true,
     "platform": "naver",
     "genres": [
-      "드라마"
+      "일상",
+      "힐링"
     ],
     "isAdult": false
   },
@@ -7232,7 +7254,8 @@
     "isFree": true,
     "platform": "naver",
     "genres": [
-      "드라마"
+      "무협",
+      "액션"
     ],
     "isAdult": false
   },
@@ -7447,7 +7470,8 @@
     "isFree": true,
     "platform": "naver",
     "genres": [
-      "드라마"
+      "판타지",
+      "액션"
     ],
     "isAdult": false
   },
@@ -7490,7 +7514,8 @@
     "isFree": true,
     "platform": "naver",
     "genres": [
-      "드라마"
+      "판타지",
+      "액션"
     ],
     "isAdult": false
   },
@@ -7620,7 +7645,8 @@
     "isFree": true,
     "platform": "naver",
     "genres": [
-      "드라마"
+      "판타지",
+      "액션"
     ],
     "isAdult": false
   },
@@ -7726,7 +7752,8 @@
     "isFree": true,
     "platform": "naver",
     "genres": [
-      "드라마"
+      "무협",
+      "액션"
     ],
     "isAdult": false
   },
@@ -7812,6 +7839,9 @@
     "isFree": true,
     "platform": "naver",
     "genres": [
+      "판타지",
+      "액션",
+      "의학",
       "드라마"
     ],
     "isAdult": false
@@ -8025,7 +8055,9 @@
     "isFree": true,
     "platform": "naver",
     "genres": [
-      "드라마"
+      "판타지",
+      "액션",
+      "무협"
     ],
     "isAdult": false
   },
@@ -8067,7 +8099,8 @@
     "isFree": true,
     "platform": "naver",
     "genres": [
-      "드라마"
+      "판타지",
+      "액션"
     ],
     "isAdult": false
   },
@@ -8494,7 +8527,8 @@
     "isFree": true,
     "platform": "naver",
     "genres": [
-      "드라마"
+      "일상",
+      "힐링"
     ],
     "isAdult": false
   },
@@ -8663,7 +8697,8 @@
     "isFree": true,
     "platform": "naver",
     "genres": [
-      "드라마"
+      "판타지",
+      "액션"
     ],
     "isAdult": false
   },
@@ -8959,7 +8994,8 @@
     "isFree": true,
     "platform": "naver",
     "genres": [
-      "드라마"
+      "판타지",
+      "액션"
     ],
     "isAdult": false
   },
@@ -9360,7 +9396,8 @@
     "isFree": true,
     "platform": "naver",
     "genres": [
-      "드라마"
+      "판타지",
+      "액션"
     ],
     "isAdult": false
   },
@@ -9381,7 +9418,7 @@
     "isFree": true,
     "platform": "naver",
     "genres": [
-      "드라마"
+      "로맨스/순정"
     ],
     "isAdult": false
   },
@@ -10304,7 +10341,7 @@
     "isFree": true,
     "platform": "naver",
     "genres": [
-      "드라마"
+      "로맨스/순정"
     ],
     "isAdult": false
   },
@@ -10577,7 +10614,7 @@
     "isFree": true,
     "platform": "naver",
     "genres": [
-      "드라마"
+      "로맨스/순정"
     ],
     "isAdult": false
   },
@@ -10875,6 +10912,7 @@
     "isFree": true,
     "platform": "naver",
     "genres": [
+      "의학",
       "드라마"
     ],
     "isAdult": false
@@ -11655,7 +11693,7 @@
     "isFree": true,
     "platform": "naver",
     "genres": [
-      "드라마"
+      "로맨스/순정"
     ],
     "isAdult": false
   },
@@ -11802,7 +11840,8 @@
     "isFree": true,
     "platform": "naver",
     "genres": [
-      "드라마"
+      "판타지",
+      "액션"
     ],
     "isAdult": false
   },
@@ -11929,7 +11968,8 @@
     "isFree": true,
     "platform": "naver",
     "genres": [
-      "드라마"
+      "판타지",
+      "액션"
     ],
     "isAdult": false
   },
@@ -12516,7 +12556,8 @@
     "isFree": true,
     "platform": "naver",
     "genres": [
-      "드라마"
+      "판타지",
+      "액션"
     ],
     "isAdult": false
   },
@@ -13300,7 +13341,8 @@
     "isFree": true,
     "platform": "naver",
     "genres": [
-      "드라마"
+      "판타지",
+      "액션"
     ],
     "isAdult": false
   },
@@ -13408,7 +13450,7 @@
     "isFree": true,
     "platform": "naver",
     "genres": [
-      "드라마"
+      "로맨스/순정"
     ],
     "isAdult": false
   },
@@ -13429,7 +13471,8 @@
     "isFree": true,
     "platform": "naver",
     "genres": [
-      "드라마"
+      "판타지",
+      "액션"
     ],
     "isAdult": false
   },
@@ -14274,7 +14317,8 @@
     "isFree": true,
     "platform": "naver",
     "genres": [
-      "드라마"
+      "판타지",
+      "액션"
     ],
     "isAdult": false
   },
@@ -14968,7 +15012,8 @@
     "isFree": true,
     "platform": "naver",
     "genres": [
-      "드라마"
+      "판타지",
+      "액션"
     ],
     "isAdult": false
   },
@@ -14989,7 +15034,8 @@
     "isFree": true,
     "platform": "naver",
     "genres": [
-      "드라마"
+      "판타지",
+      "액션"
     ],
     "isAdult": false
   },
@@ -15348,7 +15394,7 @@
     "isFree": true,
     "platform": "naver",
     "genres": [
-      "드라마"
+      "로맨스/순정"
     ],
     "isAdult": false
   },
@@ -15581,7 +15627,8 @@
     "isFree": true,
     "platform": "naver",
     "genres": [
-      "드라마"
+      "무협",
+      "액션"
     ],
     "isAdult": false
   },
@@ -16344,7 +16391,8 @@
     "isFree": true,
     "platform": "naver",
     "genres": [
-      "드라마"
+      "로맨스/순정",
+      "판타지"
     ],
     "isAdult": false
   },
@@ -16596,7 +16644,7 @@
     "isFree": true,
     "platform": "naver",
     "genres": [
-      "드라마"
+      "로맨스/순정"
     ],
     "isAdult": true
   },
@@ -16680,7 +16728,8 @@
     "isFree": true,
     "platform": "naver",
     "genres": [
-      "드라마"
+      "판타지",
+      "액션"
     ],
     "isAdult": false
   },
@@ -16850,7 +16899,8 @@
     "isFree": true,
     "platform": "naver",
     "genres": [
-      "드라마"
+      "로맨스/순정",
+      "판타지"
     ],
     "isAdult": false
   },
@@ -16914,7 +16964,7 @@
     "isFree": true,
     "platform": "naver",
     "genres": [
-      "드라마"
+      "일상"
     ],
     "isAdult": true
   },
@@ -17273,7 +17323,8 @@
     "isFree": true,
     "platform": "naver",
     "genres": [
-      "드라마"
+      "판타지",
+      "액션"
     ],
     "isAdult": false
   },
@@ -17337,7 +17388,7 @@
     "isFree": true,
     "platform": "naver",
     "genres": [
-      "드라마"
+      "학원"
     ],
     "isAdult": true
   },
@@ -17637,7 +17688,8 @@
     "isFree": true,
     "platform": "naver",
     "genres": [
-      "드라마"
+      "로맨스/순정",
+      "판타지"
     ],
     "isAdult": false
   },
@@ -17700,7 +17752,8 @@
     "isFree": true,
     "platform": "naver",
     "genres": [
-      "드라마"
+      "판타지",
+      "액션"
     ],
     "isAdult": false
   },
@@ -17763,7 +17816,8 @@
     "isFree": true,
     "platform": "naver",
     "genres": [
-      "드라마"
+      "판타지",
+      "액션"
     ],
     "isAdult": false
   },
@@ -17952,7 +18006,7 @@
     "isFree": true,
     "platform": "naver",
     "genres": [
-      "드라마"
+      "로맨스/순정"
     ],
     "isAdult": true
   },
@@ -17973,7 +18027,8 @@
     "isFree": true,
     "platform": "naver",
     "genres": [
-      "드라마"
+      "판타지",
+      "액션"
     ],
     "isAdult": false
   },
@@ -17994,7 +18049,7 @@
     "isFree": true,
     "platform": "naver",
     "genres": [
-      "드라마"
+      "로맨스/순정"
     ],
     "isAdult": true
   },
@@ -18036,7 +18091,7 @@
     "isFree": true,
     "platform": "naver",
     "genres": [
-      "드라마"
+      "일상"
     ],
     "isAdult": true
   },
@@ -18374,7 +18429,8 @@
     "isFree": true,
     "platform": "naver",
     "genres": [
-      "드라마"
+      "판타지",
+      "액션"
     ],
     "isAdult": false
   },
@@ -18417,7 +18473,8 @@
     "isFree": true,
     "platform": "naver",
     "genres": [
-      "드라마"
+      "판타지",
+      "액션"
     ],
     "isAdult": false
   },
@@ -18438,7 +18495,8 @@
     "isFree": true,
     "platform": "naver",
     "genres": [
-      "드라마"
+      "판타지",
+      "액션"
     ],
     "isAdult": false
   },
@@ -19226,7 +19284,8 @@
     "isFree": true,
     "platform": "naver",
     "genres": [
-      "드라마"
+      "판타지",
+      "액션"
     ],
     "isAdult": false
   },
@@ -19268,7 +19327,8 @@
     "isFree": true,
     "platform": "naver",
     "genres": [
-      "드라마"
+      "판타지",
+      "액션"
     ],
     "isAdult": false
   },
@@ -19289,7 +19349,8 @@
     "isFree": true,
     "platform": "naver",
     "genres": [
-      "드라마"
+      "개그",
+      "일상"
     ],
     "isAdult": false
   },
@@ -19609,7 +19670,7 @@
     "isFree": true,
     "platform": "naver",
     "genres": [
-      "드라마"
+      "로맨스/순정"
     ],
     "isAdult": true
   },
@@ -19697,7 +19758,7 @@
     "isFree": true,
     "platform": "naver",
     "genres": [
-      "드라마"
+      "로맨스/순정"
     ],
     "isAdult": false
   },
@@ -19718,7 +19779,8 @@
     "isFree": true,
     "platform": "naver",
     "genres": [
-      "드라마"
+      "판타지",
+      "액션"
     ],
     "isAdult": false
   },
@@ -20164,7 +20226,8 @@
     "isFree": true,
     "platform": "naver",
     "genres": [
-      "드라마"
+      "판타지",
+      "액션"
     ],
     "isAdult": false
   },
@@ -20206,6 +20269,7 @@
     "isFree": true,
     "platform": "naver",
     "genres": [
+      "의학",
       "드라마"
     ],
     "isAdult": false
@@ -20653,7 +20717,7 @@
     "isFree": true,
     "platform": "naver",
     "genres": [
-      "드라마"
+      "로맨스/순정"
     ],
     "isAdult": false
   },
@@ -20886,7 +20950,8 @@
     "isFree": true,
     "platform": "naver",
     "genres": [
-      "드라마"
+      "판타지",
+      "액션"
     ],
     "isAdult": false
   },
@@ -21246,7 +21311,7 @@
     "isFree": true,
     "platform": "naver",
     "genres": [
-      "드라마"
+      "BL"
     ],
     "isAdult": false
   },
@@ -21714,7 +21779,8 @@
     "isFree": true,
     "platform": "naver",
     "genres": [
-      "드라마"
+      "로맨스/순정",
+      "판타지"
     ],
     "isAdult": false
   },
@@ -22062,7 +22128,7 @@
     "isFree": true,
     "platform": "naver",
     "genres": [
-      "드라마"
+      "로맨스/순정"
     ],
     "totalEpisodes": 226,
     "isDailyPass": false,
@@ -22265,7 +22331,8 @@
     "isFree": true,
     "platform": "naver",
     "genres": [
-      "드라마"
+      "판타지",
+      "액션"
     ],
     "totalEpisodes": 68,
     "isDailyPass": false,
@@ -22681,7 +22748,8 @@
     "isFree": true,
     "platform": "naver",
     "genres": [
-      "드라마"
+      "무협",
+      "액션"
     ],
     "totalEpisodes": 236,
     "isDailyPass": true,
@@ -23153,7 +23221,8 @@
     "isUp": false,
     "platform": "kakaoPage",
     "genres": [
-      "드라마"
+      "판타지",
+      "액션"
     ],
     "isFree": false,
     "isDailyPass": true,
@@ -26273,7 +26342,7 @@
     "isUp": false,
     "platform": "kakaoPage",
     "genres": [
-      "드라마"
+      "스릴러"
     ],
     "isFree": false,
     "isDailyPass": false,
@@ -27843,7 +27912,7 @@
     "isUp": false,
     "platform": "kakaoPage",
     "genres": [
-      "드라마"
+      "스릴러"
     ],
     "isFree": false,
     "isDailyPass": false,
@@ -27935,7 +28004,8 @@
     "isUp": false,
     "platform": "kakaoPage",
     "genres": [
-      "드라마"
+      "판타지",
+      "액션"
     ],
     "isFree": false,
     "isDailyPass": true,
@@ -33457,7 +33527,7 @@
     "isUp": false,
     "platform": "kakao",
     "genres": [
-      "드라마"
+      "일상"
     ],
     "isFree": false,
     "isDailyPass": true,
@@ -43162,7 +43232,7 @@
     "isUp": false,
     "platform": "kakao",
     "genres": [
-      "드라마"
+      "스릴러"
     ],
     "isFree": true,
     "isDailyPass": false,
@@ -44288,7 +44358,7 @@
     "isUp": false,
     "platform": "kakao",
     "genres": [
-      "드라마"
+      "스릴러"
     ],
     "isFree": true,
     "isDailyPass": false,
@@ -49672,7 +49742,7 @@
     "isUp": false,
     "platform": "kakao",
     "genres": [
-      "드라마"
+      "로맨스/순정"
     ],
     "isFree": true,
     "isDailyPass": false,
@@ -49899,7 +49969,9 @@
     "isUp": false,
     "platform": "kakao",
     "genres": [
-      "드라마"
+      "판타지",
+      "드라마",
+      "아이돌"
     ],
     "isFree": false,
     "isDailyPass": false,
@@ -54523,7 +54595,8 @@
     "isUp": false,
     "platform": "kakao",
     "genres": [
-      "드라마"
+      "판타지",
+      "액션"
     ],
     "isFree": false,
     "isDailyPass": true,
@@ -66684,7 +66757,7 @@
     "isUp": false,
     "platform": "kakao",
     "genres": [
-      "드라마"
+      "스릴러"
     ],
     "isFree": false,
     "isDailyPass": true,
@@ -72101,7 +72174,8 @@
     "isUp": false,
     "platform": "kakao",
     "genres": [
-      "드라마"
+      "일상",
+      "힐링"
     ],
     "isFree": false,
     "isDailyPass": true,
@@ -72595,7 +72669,7 @@
     "isUp": false,
     "platform": "kakao",
     "genres": [
-      "드라마"
+      "학원"
     ],
     "isFree": false,
     "isDailyPass": false,
@@ -75834,7 +75908,7 @@
     "isUp": false,
     "platform": "kakao",
     "genres": [
-      "드라마"
+      "스릴러"
     ],
     "isFree": false,
     "isDailyPass": false,
@@ -76307,7 +76381,7 @@
     "isUp": false,
     "platform": "kakao",
     "genres": [
-      "드라마"
+      "BL"
     ],
     "isFree": false,
     "isDailyPass": true,
@@ -76532,7 +76606,7 @@
     "isUp": false,
     "platform": "kakao",
     "genres": [
-      "드라마"
+      "로맨스/순정"
     ],
     "isFree": false,
     "isDailyPass": true,
@@ -80732,7 +80806,7 @@
     "isUp": false,
     "platform": "kakao",
     "genres": [
-      "드라마"
+      "스릴러"
     ],
     "isFree": true,
     "isDailyPass": false,
@@ -81795,7 +81869,8 @@
     "isUp": false,
     "platform": "kakao",
     "genres": [
-      "드라마"
+      "일상",
+      "힐링"
     ],
     "isFree": false,
     "isDailyPass": false,
@@ -87337,7 +87412,7 @@
     "isUp": false,
     "platform": "kakao",
     "genres": [
-      "드라마"
+      "일상"
     ],
     "isFree": false,
     "isDailyPass": false,
@@ -87991,7 +88066,8 @@
     "isUp": false,
     "platform": "kakao",
     "genres": [
-      "드라마"
+      "판타지",
+      "액션"
     ],
     "isFree": false,
     "isDailyPass": false,
@@ -88762,7 +88838,7 @@
     "isUp": false,
     "platform": "kakao",
     "genres": [
-      "드라마"
+      "스릴러"
     ],
     "isFree": false,
     "isDailyPass": true,
@@ -88784,7 +88860,7 @@
     "isUp": false,
     "platform": "kakao",
     "genres": [
-      "드라마"
+      "스릴러"
     ],
     "isFree": false,
     "isDailyPass": false,
@@ -90100,7 +90176,7 @@
     "isUp": false,
     "platform": "kakao",
     "genres": [
-      "드라마"
+      "로맨스/순정"
     ],
     "isFree": false,
     "isDailyPass": true,
@@ -90422,7 +90498,7 @@
     "isUp": false,
     "platform": "kakao",
     "genres": [
-      "드라마"
+      "로맨스/순정"
     ],
     "isFree": false,
     "isDailyPass": false,
@@ -90457,8 +90533,8 @@
     "webtoonId": "1172",
     "title": "아스팔트 정원",
     "author": "이원진",
-    "img": "https://kr-a.kakaopagecdn.com/P/C/1172/t1/2x/82f42d35-ad39-4cb8-86b1-cab970550759",
-    "url": "https://webtoon.kakao.com/content/아스팔트-정원/1172",
+    "img": "https://kr-a.kakaopagecdn.com/P/C/1172/sharing/2x/eacb00ec-9034-42cb-a533-7c7690741113.jpg",
+    "url": "https://webtoon.kakao.com/content/%EC%95%84%EC%8A%A4%ED%8C%94%ED%8A%B8%20%EC%A0%95%EC%9B%90/1172",
     "updateDays": [
       "finished"
     ],
@@ -91900,6 +91976,7 @@
     "isUp": false,
     "platform": "kakao",
     "genres": [
+      "스포츠",
       "드라마"
     ],
     "isFree": false,
@@ -92197,7 +92274,7 @@
     "isUp": false,
     "platform": "kakao",
     "genres": [
-      "드라마"
+      "로맨스/순정"
     ],
     "isFree": false,
     "isDailyPass": false,
@@ -94792,7 +94869,7 @@
     "isUp": false,
     "platform": "kakao",
     "genres": [
-      "드라마"
+      "스릴러"
     ],
     "isFree": false,
     "isDailyPass": false,
@@ -95273,7 +95350,7 @@
     "isUp": false,
     "platform": "kakao",
     "genres": [
-      "드라마"
+      "스릴러"
     ],
     "isFree": false,
     "isDailyPass": false,
@@ -96904,7 +96981,7 @@
     "isUp": false,
     "platform": "kakao",
     "genres": [
-      "드라마"
+      "스릴러"
     ],
     "isFree": false,
     "isDailyPass": false,
