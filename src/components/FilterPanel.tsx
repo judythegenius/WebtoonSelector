@@ -1,27 +1,12 @@
 import { FilterSettings, PlatformFilter, DayFilter, StatusFilter, PriceFilter, SortOption } from "../types";
 import { Search, X, Layers, Calendar, CheckCircle2, Bookmark, Coins, ArrowUpDown } from "lucide-react";
 
-// 영어 장르코드 → 한국어 정규화 맵
-const GENRE_NORMALIZE: Record<string, string> = {
-  ACTION_WUXIA:          "무협",
-  COMIC_EVERYDAY_LIFE:   "일상",
-  FANTASY_DRAMA:         "판타지",
-  HORROR_THRILLER:       "스릴러",
-  SCHOOL_ACTION_FANTASY: "학원/액션",
-  BL:                    "BL",
-};
-
-function normalizeGenre(g: string): string {
-  return GENRE_NORMALIZE[g] ?? g;
-}
-
 interface FilterPanelProps {
   settings: FilterSettings;
   onChange: (settings: FilterSettings) => void;
-  availableGenres: string[];
 }
 
-export default function FilterPanel({ settings, onChange, availableGenres }: FilterPanelProps) {
+export default function FilterPanel({ settings, onChange }: FilterPanelProps) {
   const handlePlatformChange = (platform: PlatformFilter) => {
     onChange({ ...settings, platform });
   };
@@ -38,17 +23,6 @@ export default function FilterPanel({ settings, onChange, availableGenres }: Fil
     onChange({ ...settings, price });
   };
 
-  // 장르 멀티선택 토글 (OR)
-  const handleGenreToggle = (raw: string) => {
-    const normalized = normalizeGenre(raw);
-    const current = settings.genres ?? [];
-    const already = current.includes(normalized);
-    const next = already
-      ? current.filter((g) => g !== normalized)
-      : [...current, normalized];
-    onChange({ ...settings, genres: next });
-  };
-
   const handleSortChange = (sort: SortOption) => {
     onChange({ ...settings, sort });
   };
@@ -56,11 +30,6 @@ export default function FilterPanel({ settings, onChange, availableGenres }: Fil
   const clearSearch = () => {
     onChange({ ...settings, searchQuery: "" });
   };
-
-  // 표시용 장르 목록: 중복 제거 + 영어코드 → 한국어 변환 후 중복 제거
-  const displayGenres: string[] = Array.from(
-    new Set(availableGenres.map(normalizeGenre))
-  ).sort();
 
   const DAYS: { key: DayFilter; label: string }[] = [
     { key: "all", label: "전체" },
@@ -74,37 +43,35 @@ export default function FilterPanel({ settings, onChange, availableGenres }: Fil
   ];
 
   const PLATFORMS: { key: PlatformFilter; label: string; color: string; bg: string }[] = [
-    { key: "all",       label: "전체 플랫폼",    color: "text-gray-700",              bg: "bg-gray-100" },
-    { key: "naver",     label: "네이버 웹툰",    color: "text-emerald-700 font-bold", bg: "bg-emerald-50 border-emerald-200" },
-    { key: "kakao",     label: "카카오 웹툰",    color: "text-yellow-800 font-bold",  bg: "bg-yellow-50 border-yellow-200" },
-    { key: "kakaoPage", label: "카카오 페이지",  color: "text-amber-900 font-bold",   bg: "bg-amber-50 border-amber-200" },
+    { key: "all", label: "전체 플랫폼", color: "text-gray-700", bg: "bg-gray-100" },
+    { key: "naver", label: "네이버 웹툰", color: "text-emerald-700 font-bold", bg: "bg-emerald-50 border-emerald-200" },
+    { key: "kakao", label: "카카오 웹툰", color: "text-yellow-800 font-bold", bg: "bg-yellow-50 border-yellow-200" },
+    { key: "kakaoPage", label: "카카오 페이지", color: "text-amber-900 font-bold", bg: "bg-amber-50 border-amber-200" },
   ];
 
   const STATUSES: { key: StatusFilter; label: string }[] = [
-    { key: "all",      label: "전체" },
-    { key: "ongoing",  label: "연재중" },
+    { key: "all", label: "전체" },
+    { key: "ongoing", label: "연재중" },
     { key: "finished", label: "완결" },
-    { key: "hiatus",   label: "휴재" },
+    { key: "hiatus", label: "휴재" },
   ];
 
   const PRICES: { key: PriceFilter; label: string }[] = [
-    { key: "all",  label: "전체 요금" },
+    { key: "all", label: "전체 요금" },
     { key: "free", label: "무료" },
     { key: "paid", label: "유료" },
   ];
 
-  const SORTS: { key: SortOption; label: string }[] = [
-    { key: "default", label: "기본 정렬" },
-    { key: "updated", label: "업데이트순" },
-    { key: "newest",  label: "신작순" },
-    { key: "free",    label: "무료 많은순" },
-  ];
-
-  const selectedGenres = settings.genres ?? [];
+const SORTS: { key: SortOption; label: string }[] = [
+  { key: "default", label: "기본 정렬" },
+  { key: "updated", label: "업데이트순" },
+  { key: "newest", label: "신작순" },
+  { key: "free", label: "무료 많은순" },
+];
 
   return (
     <div id="filter-panel" className="bg-white rounded-2xl p-5 md:p-6 shadow-xs border border-gray-100 transition-all duration-300 space-y-5">
-
+      
       {/* Search Input */}
       <div>
         <div className="relative">
@@ -131,7 +98,7 @@ export default function FilterPanel({ settings, onChange, availableGenres }: Fil
         </div>
       </div>
 
-      {/* Platform Selector */}
+      {/* Platform Selector - Grid for Perfect Symmetry and Comfort */}
       <div>
         <label className="flex items-center gap-1.5 text-xs font-bold text-gray-400 mb-2.5 uppercase tracking-wider">
           <Layers size={13} /> 플랫폼 필터
@@ -157,13 +124,14 @@ export default function FilterPanel({ settings, onChange, availableGenres }: Fil
         </div>
       </div>
 
-      {/* Day Selector */}
+      {/* Day Selector - Single Row Grid */}
       <div>
         <div className="flex justify-between items-center mb-2">
           <label className="flex items-center gap-1.5 text-xs font-bold text-gray-400 uppercase tracking-wider">
             <Calendar size={13} /> 요일 및 상태
           </label>
         </div>
+        
         <div className="grid grid-cols-8 gap-[3px] bg-gray-50 p-1 rounded-xl border border-gray-100">
           {DAYS.map((d) => {
             const isSelected = settings.day === d.key;
@@ -185,8 +153,9 @@ export default function FilterPanel({ settings, onChange, availableGenres }: Fil
         </div>
       </div>
 
+      {/* Grid wrapper for Status, Price, and Genre for alignment */}
       <div className="space-y-4 pt-1">
-
+        
         {/* Status Selector */}
         <div>
           <label className="flex items-center gap-1.5 text-xs font-bold text-gray-400 mb-2 uppercase tracking-wider">
@@ -239,61 +208,65 @@ export default function FilterPanel({ settings, onChange, availableGenres }: Fil
           </div>
         </div>
 
-        {/* Genre 멀티선택 칩 */}
+        {/* Genre 멀티선택 칩 - 하드코딩으로 깔끔하게 고정 */}
         <div>
           <label className="flex items-center gap-1.5 text-xs font-bold text-gray-400 mb-2 uppercase tracking-wider">
             <Bookmark size={13} /> 장르 필터링
-            {selectedGenres.length > 0 && (
+            {(settings.genres ?? []).length > 0 && (
               <span className="ml-auto text-toss-blue font-black text-[10px] normal-case tracking-normal">
-                {selectedGenres.length}개 선택 · OR
+                {(settings.genres ?? []).length}개 선택 · OR
               </span>
             )}
           </label>
-
           <div className="flex flex-wrap gap-1.5">
-            {/* 전체 초기화 칩 */}
+            {/* 전체 초기화 */}
             <button
-              id="genre-chip-all"
               onClick={() => onChange({ ...settings, genres: [] })}
               className={`px-3 py-1.5 text-[11px] font-bold rounded-full border transition-all cursor-pointer ${
-                selectedGenres.length === 0
+                (settings.genres ?? []).length === 0
                   ? "bg-gray-800 text-white border-gray-800"
                   : "bg-gray-50 text-gray-500 border-gray-200 hover:bg-gray-100"
               }`}
-            >
-              전체
-            </button>
+            >전체</button>
 
-            {displayGenres.map((g) => {
-              const isSelected = selectedGenres.includes(g);
+            {[
+  "로맨스/순정", "판타지", "드라마", "액션", "무협",
+  "학원", "일상", "개그", "스릴러", "스포츠",
+  "BL", "메디컬",
+].map((g) => {
+              const selected = (settings.genres ?? []).includes(g);
               return (
                 <button
-                  id={`genre-chip-${g}`}
                   key={g}
-                  onClick={() => handleGenreToggle(g)}
+                  onClick={() => {
+                    const cur = settings.genres ?? [];
+                    onChange({
+                      ...settings,
+                      genres: selected ? cur.filter(x => x !== g) : [...cur, g],
+                    });
+                  }}
                   className={`px-3 py-1.5 text-[11px] font-bold rounded-full border transition-all cursor-pointer ${
-                    isSelected
+                    selected
                       ? "bg-toss-blue text-white border-toss-blue shadow-xs"
                       : "bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100"
                   }`}
-                >
-                  {g}
-                </button>
+                >{g}</button>
               );
             })}
 
-            {/* 18+ 칩 */}
+            {/* 18+ */}
             <button
-              id="genre-chip-18"
-              onClick={() => handleGenreToggle("18+")}
+              onClick={() => {
+                const cur = settings.genres ?? [];
+                const selected = cur.includes("18+");
+                onChange({ ...settings, genres: selected ? cur.filter(x => x !== "18+") : [...cur, "18+"] });
+              }}
               className={`px-3 py-1.5 text-[11px] font-bold rounded-full border transition-all cursor-pointer ${
-                selectedGenres.includes("18+")
+                (settings.genres ?? []).includes("18+")
                   ? "bg-red-500 text-white border-red-500 shadow-xs"
                   : "bg-gray-50 text-gray-500 border-gray-200 hover:bg-gray-100"
               }`}
-            >
-              🔞 18+
-            </button>
+            >🔞 18+</button>
           </div>
         </div>
 
@@ -324,6 +297,7 @@ export default function FilterPanel({ settings, onChange, availableGenres }: Fil
         </div>
 
       </div>
+
     </div>
   );
 }

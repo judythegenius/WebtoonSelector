@@ -38,7 +38,7 @@ export interface FilterSettings {
   platform: PlatformFilter;
   day: DayFilter;
   status: StatusFilter;
-  genres: string[]; // [] = 전체, 선택된 장르 배열 (OR 필터)
+  genres: string[];   // 멀티선택 OR 필터 (빈 배열 = 전체)
   searchQuery: string;
   price: PriceFilter;
   sort: SortOption;

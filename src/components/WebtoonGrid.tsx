@@ -12,22 +12,24 @@ interface WebtoonGridProps {
 export default function WebtoonGrid({ webtoons, onResetFilters, onUpdateWebtoon }: WebtoonGridProps) {
   const [failedImageIds, setFailedImageIds] = useState<Record<string, boolean>>({});
   const [updatingIds, setUpdatingIds] = useState<Record<string, boolean>>({});
+  const attemptedIds = React.useRef<Set<string>>(new Set()); // 이미 시도한 ID 추적
 
-  // 이미지 없는 카카오 카드 자동 업뎃
-useEffect(() => {
-  if (!onUpdateWebtoon) return;
-  const kakaoWithoutImg = webtoons.filter(
-    w => (w.platform === "kakao" || w.platform === "kakaoPage") && !w.img
-  );
-  kakaoWithoutImg.forEach(w => {
-    if (!updatingIds[w.id]) {
+  // 이미지 없는 카카오 카드 자동 업뎃 - 한 번만 시도
+  useEffect(() => {
+    if (!onUpdateWebtoon) return;
+    const kakaoWithoutImg = webtoons.filter(
+      w => (w.platform === "kakao" || w.platform === "kakaoPage") && !w.img
+    );
+    kakaoWithoutImg.forEach(w => {
+      // 이미 시도했거나 진행 중이면 스킵
+      if (attemptedIds.current.has(w.id) || updatingIds[w.id]) return;
+      attemptedIds.current.add(w.id);
       setUpdatingIds(prev => ({ ...prev, [w.id]: true }));
       onUpdateWebtoon(w.id).finally(() => {
         setUpdatingIds(prev => ({ ...prev, [w.id]: false }));
       });
-    }
-  });
-}, [webtoons]);
+    });
+  }, [webtoons.map(w => w.id).join(",")]); // webtoon ID 목록이 바뀔 때만 실행
   
   const handleUpdateClick = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
@@ -117,17 +119,14 @@ useEffect(() => {
   return (
     <div>
       <div className="flex justify-between items-center mb-4">
-        <p className="text-xs font-semibold text-gray-400">
-          검색된 웹툰 <span className="text-toss-blue font-bold">{webtoons.length}</span>개
-        </p>
       </div>
 
       <div id="webtoon-grid-layout" className="grid grid-cols-2 gap-3.5">
         {webtoons.map((webtoon, idx) => {
           const pStyle = getPlatformStyle(webtoon.platform);
-          // Bypass referer check using server proxy
+          // 이미지 프록시 URL - Date.now() 제거해서 캐시 유지
           const proxiedImg = webtoon.img 
-          ? `/api/image-proxy?url=${encodeURIComponent(webtoon.img)}&t=${Date.now()}`
+          ? `/api/image-proxy?url=${encodeURIComponent(webtoon.img)}`
           : "";
 
           return (
@@ -183,27 +182,27 @@ useEffect(() => {
                       loop
                       muted
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    onError={() => {
-                      if (onUpdateWebtoon && !updatingIds[webtoon.id]) {
-                        setUpdatingIds(prev => ({ ...prev, [webtoon.id]: true }));
-                        onUpdateWebtoon(webtoon.id).then((updated) => {
-                          if (updated?.img) {
-                            // 이미지 URL 바뀌면 failedImageIds 초기화해서 다시 시도
-                            setFailedImageIds(prev => {
-                              const next = { ...prev };
-                              delete next[webtoon.id];
-                              return next;
-                            });
-                          } else {
-                            setFailedImageIds(prev => ({ ...prev, [webtoon.id]: true }));
-                          }
-                        }).finally(() => {
-                          setUpdatingIds(prev => ({ ...prev, [webtoon.id]: false }));
+                onError={() => {
+                  if (onUpdateWebtoon && !updatingIds[webtoon.id] && !attemptedIds.current.has(webtoon.id)) {
+                    attemptedIds.current.add(webtoon.id);
+                    setUpdatingIds(prev => ({ ...prev, [webtoon.id]: true }));
+                    onUpdateWebtoon(webtoon.id).then((updated) => {
+                      if (updated?.img) {
+                        setFailedImageIds(prev => {
+                          const next = { ...prev };
+                          delete next[webtoon.id];
+                          return next;
                         });
                       } else {
                         setFailedImageIds(prev => ({ ...prev, [webtoon.id]: true }));
                       }
-                    }}
+                    }).finally(() => {
+                      setUpdatingIds(prev => ({ ...prev, [webtoon.id]: false }));
+                    });
+                  } else {
+                    setFailedImageIds(prev => ({ ...prev, [webtoon.id]: true }));
+                  }
+                }}
                     />
                   ) : (
 
@@ -215,11 +214,11 @@ useEffect(() => {
                       loading="lazy"
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                 onError={() => {
-                  if (onUpdateWebtoon && !updatingIds[webtoon.id]) {
+                  if (onUpdateWebtoon && !updatingIds[webtoon.id] && !attemptedIds.current.has(webtoon.id)) {
+                    attemptedIds.current.add(webtoon.id);
                     setUpdatingIds(prev => ({ ...prev, [webtoon.id]: true }));
                     onUpdateWebtoon(webtoon.id).then((updated) => {
                       if (updated?.img) {
-                        // 이미지 URL 바뀌면 failedImageIds 초기화해서 다시 시도
                         setFailedImageIds(prev => {
                           const next = { ...prev };
                           delete next[webtoon.id];

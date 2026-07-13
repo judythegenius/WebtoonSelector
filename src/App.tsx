@@ -20,13 +20,13 @@ const INITIAL_FILTERS: FilterSettings = {
 export default function App() {
   const [webtoons, setWebtoons] = useState<Webtoon[]>([]);
   const [filteredWebtoons, setFilteredWebtoons] = useState<Webtoon[]>([]);
-  const [totalCount, setTotalCount] = useState<number>(0);
   const [filters, setFilters] = useState<FilterSettings>(INITIAL_FILTERS);
-  const [availableGenres, setAvailableGenres] = useState<string[]>([]);
+  
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [curatedIds, setCuratedIds] = useState<string[] | null>(null);
   const [hasMore, setHasMore] = useState(false);
+  const [totalCount, setTotalCount] = useState(0); // ← 이거 추가
   const [currentPage, setCurrentPage] = useState(1);
 
   // Real system time simulation for native mobile feel
@@ -77,22 +77,13 @@ export default function App() {
     }
   });
 
-  // Fetch all webtoons (used for genre calculations)
+  // Fetch all webtoons for context
   const fetchAllWebtoons = useCallback(async () => {
     try {
-      const res = await fetch("/api/webtoons?platform=all&day=all&status=all&genre=all&limit=9999");
+      const res = await fetch("/api/webtoons?platform=all&day=all&status=all&limit=9999");
       if (res.ok) {
         const data = await res.json();
         setWebtoons(data.webtoons || []);
-
-        // Compute unique genres dynamically
-        const genresSet = new Set<string>();
-        (data.webtoons || []).forEach((w: Webtoon) => {
-          if (w.genres) {
-            w.genres.forEach(g => genresSet.add(g));
-          }
-        });
-        setAvailableGenres(Array.from(genresSet).sort());
       }
     } catch (e) {
       console.error("Failed to load global webtoons context", e);
@@ -141,8 +132,7 @@ export default function App() {
       let list = data.webtoons || [];
 
       setFilteredWebtoons(prev => append ? [...prev, ...list] : list);
-      setHasMore(data.hasMore || false);
-      setTotalCount(data.total ?? (append ? filteredWebtoons.length + list.length : list.length));
+      setTotalCount(data.total ?? 0);
       setCurrentPage(page);
     } catch (err: any) {
       setError(err.message || "데이터 로딩 중 에러가 발생했습니다.");
@@ -189,7 +179,7 @@ export default function App() {
   // Surprise match for Ad Curation Tour (pure local random shuffle, no AI)
   const triggerAISurpriseMatch = async () => {
     try {
-      const response = await fetch("/api/webtoons?platform=all&day=all&status=all&genre=all&limit=9999");
+      const response = await fetch("/api/webtoons?platform=all&day=all&status=all&limit=9999");
       const data = await response.json();
       const allList: Webtoon[] = data.webtoons || [];
       if (allList.length > 0) {
@@ -341,23 +331,24 @@ export default function App() {
                   setFilters(newFilters);
                   setCuratedIds(null);
                 }}
-                availableGenres={availableGenres}
+                
               />
             </div>
 
             {/* Webtoons Cards Render Grid */}
             <div className="space-y-2.5 pt-2">
               <div className="flex justify-between items-center px-1">
-                <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-extrabold text-gray-400 uppercase tracking-wider">웹툰 취향 검색 결과</span>
-                  {totalCount > 0 && (
-                    <span className="text-[11px] font-black text-toss-blue">
-                      {filteredWebtoons.length < totalCount
-                        ? `${filteredWebtoons.length} / ${totalCount.toLocaleString()}개`
-                        : `총 ${totalCount.toLocaleString()}개`}
-                    </span>
-                  )}
-                </div>
+                // 이걸로 교체
+<div className="flex items-center gap-2">
+  <span className="text-[10px] font-extrabold text-gray-400 uppercase tracking-wider">웹툰 취향 검색 결과</span>
+  {totalCount > 0 && (
+    <span className="text-[11px] font-black text-toss-blue">
+      {filteredWebtoons.length < totalCount
+        ? `${filteredWebtoons.length} / ${totalCount.toLocaleString()}개`
+        : `총 ${totalCount.toLocaleString()}개`}
+    </span>
+  )}
+</div>
                 {(filters.platform !== "all" || filters.day !== "all" || filters.status !== "all" || (filters.genres && filters.genres.length > 0) || filters.price !== "all" || filters.searchQuery) && (
                   <button
                     id="reset-filters-btn-sub"
@@ -400,12 +391,12 @@ export default function App() {
                       <button
                         onClick={() => {
                           adPurposeRef.current = 'loadMore';
-                          loadAd();
-                          fetchFilteredWebtoons(currentPage + 1, true);
+                          loadAd(); // 광고 먼저
+                          fetchFilteredWebtoons(currentPage + 1, true); // 동시에 다음 페이지 로드
                         }}
                         className="w-full py-3 bg-white border border-gray-200 rounded-xl text-sm font-bold text-toss-blue hover:bg-blue-50 transition-colors mt-3 cursor-pointer"
                       >
-                        더보기 {totalCount > 0 && `(${Math.min(6, totalCount - filteredWebtoons.length)}개 더 · 총 ${totalCount.toLocaleString()}개)`}
+                       더보기 {totalCount > 0 && `(${Math.min(6, totalCount - filteredWebtoons.length)}개 더 · 총 ${totalCount.toLocaleString()}개)`}
                       </button>
                     )}
                   </>

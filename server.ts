@@ -1184,8 +1184,13 @@ const GENRE_NORMALIZE: Record<string, string> = {
   COMIC_EVERYDAY_LIFE:   "일상",
   FANTASY_DRAMA:         "판타지",
   HORROR_THRILLER:       "스릴러",
-  SCHOOL_ACTION_FANTASY: "학원/액션",
+  SCHOOL_ACTION_FANTASY: "학원",
   BL:                    "BL",
+  // 중복 장르 통합
+  "메디컬":              "의학",
+  "공포":                "스릴러",
+  "힐링":                "일상",
+  "학원/액션":           "학원",
 };
 const normalizeGenre = (g: string) => GENRE_NORMALIZE[g] ?? g;
 
@@ -1798,20 +1803,28 @@ app.post("/api/admin/crawl-kakaopage", async (req, res) => {
           : 24,
         freeEpisodes: item.free_slide_count || 0,
         isAdult: (item.age_grade || 0) >= 18,
-      };
+      };ㅞ
     };
 
     // bff-page 요일별 + 완결 수집
-    const BFF_ENDPOINTS = [
-      `https://bff-page.kakao.com/api/gateway/view/v2/landing/dayofweek?category_uid=10&page=0&screen_uid=52`,
-      `https://bff-page.kakao.com/api/gateway/view/v2/landing/dayofweek?category_uid=10&page=1&screen_uid=52`,
-      `https://bff-page.kakao.com/api/gateway/view/v2/landing/dayofweek?category_uid=10&page=2&screen_uid=52`,
-      `https://bff-page.kakao.com/api/gateway/view/v2/landing/dayofweek?category_uid=10&page=3&screen_uid=52`,
-      `https://bff-page.kakao.com/api/gateway/view/v2/landing/dayofweek?category_uid=10&page=4&screen_uid=52`,
-      `https://bff-page.kakao.com/api/gateway/view/v2/landing/complete?category_uid=10&page=0&screen_uid=52`,
-      `https://bff-page.kakao.com/api/gateway/view/v2/landing/complete?category_uid=10&page=1&screen_uid=52`,
-      `https://bff-page.kakao.com/api/gateway/view/v2/landing/complete?category_uid=10&page=2&screen_uid=52`,
-    ];
+const BFF_ENDPOINTS = [
+  // 요일연재 page 0~9
+  ...Array.from({length: 10}, (_, i) =>
+    `https://bff-page.kakao.com/api/gateway/view/v2/landing/dayofweek?category_uid=10&page=${i}&screen_uid=52`
+  ),
+  // 완결 page 0~9
+  ...Array.from({length: 10}, (_, i) =>
+    `https://bff-page.kakao.com/api/gateway/view/v2/landing/complete?category_uid=10&page=${i}&screen_uid=52`
+  ),
+  // 남성인기
+  ...Array.from({length: 5}, (_, i) =>
+    `https://bff-page.kakao.com/api/gateway/view/v2/landing/dayofweek?category_uid=10&page=${i}&screen_uid=10`
+  ),
+  // 여성인기
+  ...Array.from({length: 5}, (_, i) =>
+    `https://bff-page.kakao.com/api/gateway/view/v2/landing/dayofweek?category_uid=10&page=${i}&screen_uid=11`
+  ),
+];
 
     for (const url of BFF_ENDPOINTS) {
       try {
@@ -2020,12 +2033,18 @@ app.post("/api/admin/crawl-kakao", async (req, res) => {
               const authorObj = content.authors?.find((a: any) => a.type === "AUTHOR") || content.authors?.[0];
               const author    = authorObj?.name || "작가 미상";
 
-              // 썸네일: c1/2x 이미지 우선, 애니메이션 fallback
-              const thumbnail =
+              // 썸네일: thumbnail 배열 우선, 없으면 다른 이미지 필드
+              const rawThumb: string =
+                content.thumbnail?.[0] ||
                 content.titleImageA ||
                 content.featuredCharacterImageA ||
                 content.featuredCharacterAnimationFirstFrame ||
                 content.titleImageB || "";
+
+              // .jpg 확장자 없으면 붙여줌 (Android WebView Content-Type 문제 방지)
+              const thumbnail = rawThumb && !rawThumb.match(/\.(jpg|jpeg|png|webp|gif)(\?|$)/i)
+                ? rawThumb + ".jpg"
+                : rawThumb;
 
               // URL: seoId 있으면 사용
               const seoId = content.seoId || encodeURIComponent(content.title || rawId);
