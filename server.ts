@@ -521,8 +521,6 @@ if (genresParam) {
     return genreMatch && adultMatch;
   });
 }
-}
-
   // Filter: query (title or author)
   if (q && typeof q === "string") {
     const search = q.toLowerCase().trim();

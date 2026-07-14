@@ -14,8 +14,11 @@
   },
   "dependencies": {
     "@apps-in-toss/web-framework": "^2.10.6",
+    "@emotion/react": "^11.14.0",
     "@google/genai": "^2.4.0",
     "@tailwindcss/vite": "^4.1.14",
+    "@toss/tds-mobile": "^2.5.0",
+    "@toss/tds-mobile-ait": "^2.5.0",
     "@vitejs/plugin-react": "^5.0.4",
     "dotenv": "^17.2.3",
     "express": "^4.21.2",
