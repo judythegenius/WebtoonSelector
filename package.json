@@ -7,8 +7,8 @@
   "start": "node dist/server.cjs",
   "predev": "npx kill-port 3000",
   "dev": "granite dev",
-  "build": "ait build",
-  "postbuild": "node -e \"const fs=require('fs'); if(fs.existsSync('dist/server.js')){fs.copyFileSync('dist/server.js','dist/server.cjs'); console.log('COPY_OK: server.js -> server.cjs');} else { console.log('COPY_FAIL: dist/server.js 파일이 없음'); }\"",
+  "build": "ait build && npx esbuild server.ts --bundle --platform=node --outfile=dist/server.js --format=cjs --external:express --external:dotenv --external:esbuild",
+  "postbuild": "node -e \"const fs=require('fs'); if(fs.existsSync('dist/server.js')){fs.copyFileSync('dist/server.js','dist/server.cjs'); console.log('COPY_OK');} else { console.log('COPY_FAIL'); }\"",
   "clean": "rm -rf dist data/webtoons.json",
   "lint": "tsc --noEmit",
   "deploy": "ait deploy"
