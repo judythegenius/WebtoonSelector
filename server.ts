@@ -58,8 +58,7 @@ import http from "http";
 // Load environment variables
 dotenv.config();
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const __dirname = path.dirname(require.main?.filename ?? process.cwd());
 
 const app = express();
 const PORT = 3000;
