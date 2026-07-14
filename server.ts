@@ -89,696 +89,7 @@ function log(msg: string) {
 }
 
 // Seed Data
-const SEED_WEBTOONS = [
-  {
-    id: "naver_769209",
-    webtoonId: "769209",
-    title: "화산귀환",
-    author: "비가 / LICO",
-    img: "https://image-comic.pstatic.net/webtoon/769209/thumbnail/thumbnail_IMAG21_3510521481134543456.jpg",
-    url: "https://comic.naver.com/webtoon/list?titleId=769209",
-    updateDays: ["WED"],
-    isEnd: false,
-    isNew: false,
-    isUp: true,
-    platform: "naver",
-    genres: ["판타지", "액션", "무협"],
-    isFree: true
-  },
-  {
-    id: "naver_183559",
-    webtoonId: "183559",
-    title: "신의 탑",
-    author: "SIU",
-    img: "https://image-comic.pstatic.net/webtoon/183559/thumbnail/thumbnail_IMAG21_5872421216315302903.jpg",
-    url: "https://comic.naver.com/webtoon/list?titleId=183559",
-    updateDays: ["MON"],
-    isEnd: false,
-    isNew: false,
-    isUp: false,
-    platform: "naver",
-    genres: ["판타지", "액션"],
-    isFree: true
-  },
-  {
-    id: "naver_570503",
-    webtoonId: "570503",
-    title: "연애혁명",
-    author: "232",
-    img: "https://image-comic.pstatic.net/webtoon/570503/thumbnail/thumbnail_IMAG21_3914445831525042609.jpg",
-    url: "https://comic.naver.com/webtoon/list?titleId=570503",
-    updateDays: ["finished"],
-    isEnd: true,
-    isNew: false,
-    isUp: false,
-    platform: "naver",
-    genres: ["로맨스/순정", "일상", "드라마"],
-    totalEpisodes: 442,
-    isDailyPass: true,
-    dailyPassDuration: 24,
-    paidEpisodes: 20,
-    freeEpisodes: 422,
-    isFree: false
-  },
-  {
-    id: "naver_641253",
-    webtoonId: "641253",
-    title: "외모지상주의",
-    author: "박태준",
-    img: "https://image-comic.pstatic.net/webtoon/641253/thumbnail/thumbnail_IMAG21_3841920935541604902.jpg",
-    url: "https://comic.naver.com/webtoon/list?titleId=641253",
-    updateDays: ["FRI"],
-    isEnd: false,
-    isNew: false,
-    isUp: true,
-    platform: "naver",
-    genres: ["액션", "드라마", "학원"],
-    isFree: true
-  },
-  {
-    id: "naver_735661",
-    webtoonId: "735661",
-    title: "재혼 황후",
-    author: "알파타르트 / 숨풀 / sanyo",
-    img: "https://image-comic.pstatic.net/webtoon/735661/thumbnail/thumbnail_IMAG21_7074212959082987113.jpg",
-    url: "https://comic.naver.com/webtoon/list?titleId=735661",
-    updateDays: ["FRI", "SUN"],
-    isEnd: false,
-    isNew: false,
-    isUp: false,
-    platform: "naver",
-    genres: ["로맨스/순정", "드라마", "판타지"],
-    isFree: true
-  },
-  {
-    id: "kakaoPage_51854447",
-    webtoonId: "51854447",
-    title: "나 혼자만 레벨업",
-    author: "추공 / 장성락 / 현군",
-    img: "https://dn-img-page.kakao.com/webtoon/51854447/thumbnail.jpg",
-    url: "https://page.kakao.com/content/51854447",
-    updateDays: ["finished"],
-    isEnd: true,
-    isNew: false,
-    isUp: false,
-    platform: "kakaoPage",
-    genres: ["판타지", "액션"],
-    isFree: false,
-    isDailyPass: true,
-    dailyPassDuration: 24,
-    totalEpisodes: 201,
-    freeEpisodes: 15,
-    paidEpisodes: 186
-  },
-  {
-    id: "kakaoPage_60037130",
-    webtoonId: "60037130",
-    title: "데뷔 못 하면 죽는 병 걸림",
-    author: "백덕수 / 소흔",
-    img: "https://dn-img-page.kakao.com/webtoon/60037130/thumbnail.jpg",
-    url: "https://page.kakao.com/content/60037130",
-    updateDays: ["THU"],
-    isEnd: false,
-    isNew: false,
-    isUp: false,
-    platform: "kakaoPage",
-    genres: ["판타지", "드라마", "아이돌"],
-    isFree: false,
-    isDailyPass: true,
-    dailyPassDuration: 24,
-    totalEpisodes: 110,
-    freeEpisodes: 10,
-    paidEpisodes: 100
-  },
-  {
-    id: "kakaoPage_54724810",
-    webtoonId: "54724810",
-    title: "템빨",
-    author: "이동현 / 신노아",
-    img: "https://dn-img-page.kakao.com/webtoon/54724810/thumbnail.jpg",
-    url: "https://page.kakao.com/content/54724810",
-    updateDays: ["SAT"],
-    isEnd: false,
-    isNew: false,
-    isUp: true,
-    platform: "kakaoPage",
-    genres: ["판타지", "액션"],
-    isFree: false,
-    isDailyPass: true,
-    dailyPassDuration: 24,
-    totalEpisodes: 180,
-    freeEpisodes: 20,
-    paidEpisodes: 160
-  },
-  {
-    id: "kakaoPage_52971234",
-    webtoonId: "52971234",
-    title: "도굴왕",
-    author: "윤지선 / 산지직송",
-    img: "https://dn-img-page.kakao.com/webtoon/52971234/thumbnail.jpg",
-    url: "https://page.kakao.com/content/52971234",
-    updateDays: ["finished"],
-    isEnd: true,
-    isNew: false,
-    isUp: false,
-    platform: "kakaoPage",
-    genres: ["판타지", "액션"],
-    isFree: false,
-    isDailyPass: true,
-    dailyPassDuration: 24,
-    totalEpisodes: 410,
-    freeEpisodes: 40,
-    paidEpisodes: 370
-  },
-  {
-    id: "kakaoPage_53123456",
-    webtoonId: "53123456",
-    title: "학사신공",
-    author: "왕위 / 파란선",
-    img: "https://dn-img-page.kakao.com/webtoon/53123456/thumbnail.jpg",
-    url: "https://page.kakao.com/content/53123456",
-    updateDays: ["MON"],
-    isEnd: false,
-    isNew: false,
-    isUp: false,
-    platform: "kakaoPage",
-    genres: ["판타지", "무협"],
-    isFree: false,
-    isDailyPass: true,
-    dailyPassDuration: 12,
-    totalEpisodes: 300,
-    freeEpisodes: 30,
-    paidEpisodes: 270
-  },
-  {
-    id: "kakao_1885",
-    webtoonId: "1885",
-    title: "사내맞선",
-    author: "해화 / 들깨 / NARAL",
-    img: "https://dn-img-page.kakao.com/webtoon/1885/thumbnail.jpg",
-    url: "https://webtoon.kakao.com/content/%EC%82%AC%EB%82%B4%EB%A7%9E%EC%84%A0/1885",
-    updateDays: ["finished"],
-    isEnd: true,
-    isNew: false,
-    isUp: false,
-    platform: "kakao",
-    genres: ["로맨스/순정", "드라마"],
-    isFree: false,
-    isDailyPass: true,
-    dailyPassDuration: 24,
-    totalEpisodes: 102,
-    freeEpisodes: 6,
-    paidEpisodes: 96
-  },
-  {
-    id: "kakao_1357",
-    webtoonId: "1357",
-    title: "이태원 클라쓰",
-    author: "광진",
-    img: "https://dn-img-page.kakao.com/webtoon/1357/thumbnail.jpg",
-    url: "https://webtoon.kakao.com/content/%EC%9D%B4%ED%83%9C%EC%9B%90-%ED%81%B4%EB%9D%BC%EC%93%B0/1357",
-    updateDays: ["finished"],
-    isEnd: true,
-    isNew: false,
-    isUp: false,
-    platform: "kakao",
-    genres: ["드라마"],
-    isFree: false,
-    isDailyPass: true,
-    dailyPassDuration: 24,
-    totalEpisodes: 78,
-    freeEpisodes: 5,
-    paidEpisodes: 73
-  },
-  {
-    id: "kakao_818",
-    webtoonId: "818",
-    title: "미생",
-    author: "윤태호",
-    img: "https://kr-a.kakaopagecdn.com/P/C/818/c1a/c0c31425-f0db-474f-accc-4312abb3c95e.webm",
-    url: "https://webtoon.kakao.com/content/%EB%AF%B8%EC%83%9D/818",
-    updateDays: ["TUE"],
-    isEnd: false,
-    isNew: false,
-    isUp: true,
-    platform: "kakao",
-    genres: ["드라마", "일상"],
-    isFree: false,
-    isDailyPass: true,
-    dailyPassDuration: 24,
-    totalEpisodes: 150,
-    freeEpisodes: 15,
-    paidEpisodes: 135
-  },
-  {
-    id: "kakao_559",
-    webtoonId: "559",
-    title: "무빙",
-    author: "강풀",
-    img: "https://dn-img-page.kakao.com/webtoon/559/thumbnail.jpg",
-    url: "https://webtoon.kakao.com/content/%EB%AC%B4%EB%B9%99/559",
-    updateDays: ["finished"],
-    isEnd: true,
-    isNew: false,
-    isUp: false,
-    platform: "kakao",
-    genres: ["액션", "판타지", "드라마"],
-    isFree: false,
-    isDailyPass: true,
-    dailyPassDuration: 24,
-    totalEpisodes: 45,
-    freeEpisodes: 5,
-    paidEpisodes: 40
-  },
-  {
-    id: "kakao_4385",
-    webtoonId: "4385",
-    title: "블랙-헤이즈",
-    author: "용용",
-    img: "https://webtoon.kakao.com/content/%EB%B8%94%EB%9E%99-%ED%97%A4%EC%9D%B4%EC%A6%88/4385",
-    url: "https://webtoon.kakao.com/content/%EB%B8%94%EB%9E%99-%ED%97%A4%EC%9D%B4%EC%A6%88/4385",
-    updateDays: ["finished"],
-    isEnd: true,
-    isNew: false,
-    isUp: false,
-    platform: "kakao",
-    genres: ["판타지", "액션"],
-    isFree: false,
-    isDailyPass: true,
-    dailyPassDuration: 24,
-    totalEpisodes: 228,
-    freeEpisodes: 10,
-    paidEpisodes: 218
-  },
-  {
-    id: "kakao_1435",
-    webtoonId: "1435",
-    title: "경이로운 소문",
-    author: "장이",
-    img: "https://dn-img-page.kakao.com/webtoon/1435/thumbnail.jpg",
-    url: "https://webtoon.kakao.com/content/%EA%B2%BD%EC%9D%B4%EB%A1%9C%EC%9A%B4-%EC%86%8C%EB%AC%B8/1435",
-    updateDays: ["THU"],
-    isEnd: false,
-    isNew: false,
-    isUp: false,
-    platform: "kakao",
-    genres: ["판타지", "액션", "스릴러"],
-    isFree: false,
-    isDailyPass: true,
-    dailyPassDuration: 24,
-    totalEpisodes: 160,
-    freeEpisodes: 16,
-    paidEpisodes: 144
-  },
-  {
-    id: "kakao_1211",
-    webtoonId: "1211",
-    title: "나빌레라",
-    author: "Hun / 지민",
-    img: "https://dn-img-page.kakao.com/webtoon/1211/thumbnail.jpg",
-    url: "https://webtoon.kakao.com/content/%EB%82%98%EB%B9%8C%EB%A0%88%EB%9D%BC/1211",
-    updateDays: ["finished"],
-    isEnd: true,
-    isNew: false,
-    isUp: false,
-    platform: "kakao",
-    genres: ["드라마", "일상"],
-    isFree: true,
-    isDailyPass: false,
-    totalEpisodes: 56,
-    freeEpisodes: 56,
-    paidEpisodes: 0
-  },
-  {
-    id: "kakao_1125",
-    webtoonId: "1125",
-    title: "조명가게",
-    author: "강풀",
-    img: "https://dn-img-page.kakao.com/webtoon/1125/thumbnail.jpg",
-    url: "https://webtoon.kakao.com/content/%EC%A1%B0%EB%AA%85%EA%B0%80%EA%B2%8C/1125",
-    updateDays: ["finished"],
-    isEnd: true,
-    isNew: false,
-    isUp: false,
-    platform: "kakao",
-    genres: ["스릴러", "미스터리"],
-    isFree: false,
-    isDailyPass: true,
-    dailyPassDuration: 24,
-    totalEpisodes: 30,
-    freeEpisodes: 3,
-    paidEpisodes: 27
-  },
-  {
-    id: "kakaoPage_49123456",
-    webtoonId: "49123456",
-    title: "닥터 최태수",
-    author: "조석호 / 스튜디오인투",
-    img: "https://dn-img-page.kakao.com/webtoon/49123456/thumbnail.jpg",
-    url: "https://page.kakao.com/content/49123456",
-    updateDays: ["MON"],
-    isEnd: false,
-    isNew: false,
-    isUp: false,
-    platform: "kakaoPage",
-    genres: ["드라마", "메디컬"],
-    isFree: false,
-    isDailyPass: true,
-    dailyPassDuration: 12,
-    totalEpisodes: 420,
-    freeEpisodes: 40,
-    paidEpisodes: 380
-  },
-  {
-    id: "kakaoPage_53982345",
-    webtoonId: "53982345",
-    title: "비뢰도",
-    author: "검류혼 / 홍반장",
-    img: "https://dn-img-page.kakao.com/webtoon/53982345/thumbnail.jpg",
-    url: "https://page.kakao.com/content/53982345",
-    updateDays: ["WED"],
-    isEnd: false,
-    isNew: false,
-    isUp: false,
-    platform: "kakaoPage",
-    genres: ["판타지", "액션", "무협"],
-    isFree: false,
-    isDailyPass: true,
-    dailyPassDuration: 24,
-    totalEpisodes: 140,
-    freeEpisodes: 15,
-    paidEpisodes: 125
-  },
-  {
-    id: "kakaoPage_51928345",
-    webtoonId: "51928345",
-    title: "어느 날 공주가 되어버렸다",
-    author: "플루토스 / 스푼",
-    img: "https://dn-img-page.kakao.com/webtoon/51928345/thumbnail.jpg",
-    url: "https://page.kakao.com/content/51928345",
-    updateDays: ["finished"],
-    isEnd: true,
-    isNew: false,
-    isUp: false,
-    platform: "kakaoPage",
-    genres: ["로맨스/순정", "판타지"],
-    isFree: false,
-    isDailyPass: true,
-    dailyPassDuration: 24,
-    totalEpisodes: 125,
-    freeEpisodes: 12,
-    paidEpisodes: 113
-  },
-  {
-    id: "kakaoPage_52112345",
-    webtoonId: "52112345",
-    title: "인소의 법칙",
-    author: "유한려 / 아현",
-    img: "https://dn-img-page.kakao.com/webtoon/52112345/thumbnail.jpg",
-    url: "https://page.kakao.com/content/52112345",
-    updateDays: ["FRI"],
-    isEnd: false,
-    isNew: false,
-    isUp: false,
-    platform: "kakaoPage",
-    genres: ["로맨스/순정", "학원", "드라마"],
-    isFree: false,
-    isDailyPass: true,
-    dailyPassDuration: 24,
-    totalEpisodes: 190,
-    freeEpisodes: 19,
-    paidEpisodes: 171
-  },
-  {
-    id: "kakao_1188",
-    webtoonId: "1188",
-    title: "가랑가랑",
-    author: "이아루",
-    img: "https://dn-img-page.kakao.com/webtoon/1188/thumbnail.jpg",
-    url: "https://webtoon.kakao.com/content/%EA%B0%80%EB%9E%91%EA%B0%80%EB%9E%91/1188",
-    updateDays: ["finished"],
-    isEnd: true,
-    isNew: false,
-    isUp: false,
-    platform: "kakao",
-    genres: ["로맨스/순정"],
-    isFree: true,
-    isDailyPass: false,
-    totalEpisodes: 40,
-    freeEpisodes: 40,
-    paidEpisodes: 0
-  },
-  {
-    id: "kakao_1399",
-    webtoonId: "1399",
-    title: "바니와 오빠들",
-    author: "니은",
-    img: "https://dn-img-page.kakao.com/webtoon/1399/thumbnail.jpg",
-    url: "https://webtoon.kakao.com/content/%EB%B0%94%EB%8B%88%EC%99%80-%EC%98%A4%EB%B9%A5%EB%93%A4/1399",
-    updateDays: ["SUN"],
-    isEnd: false,
-    isNew: false,
-    isUp: false,
-    platform: "kakao",
-    genres: ["로맨스/순정", "드라마"],
-    isFree: false,
-    isDailyPass: true,
-    dailyPassDuration: 24,
-    totalEpisodes: 120,
-    freeEpisodes: 12,
-    paidEpisodes: 108
-  },
-  {
-    id: "kakaoPage_55987654",
-    webtoonId: "55987654",
-    title: "악녀는 마리오네트",
-    author: "한이림 / 망글이",
-    img: "https://dn-img-page.kakao.com/webtoon/55987654/thumbnail.jpg",
-    url: "https://page.kakao.com/content/55987654",
-    updateDays: ["WED"],
-    isEnd: false,
-    isNew: false,
-    isUp: false,
-    platform: "kakaoPage",
-    genres: ["로맨스/순정", "판타지"],
-    isFree: false,
-    isDailyPass: true,
-    dailyPassDuration: 24,
-    totalEpisodes: 85,
-    freeEpisodes: 8,
-    paidEpisodes: 77
-  },
-  {
-    id: "naver_796123",
-    webtoonId: "796123",
-    title: "남편을 죽여줘요",
-    author: "명랑 / LeeYone",
-    img: "https://image-comic.pstatic.net/webtoon/797410/thumbnail/thumbnail_IMAG21_9852442e-217e-4ec7-92a7-21c0ada85dc7.jpg",
-    url: "https://comic.naver.com/webtoon/list?titleId=797410",
-    updateDays: ["SUN"],
-    isEnd: false,
-    isNew: false,
-    isUp: false,
-    platform: "naver",
-    genres: ["드라마", "스릴러"],
-    isFree: true
-  },
-  {
-    id: "naver_741891",
-    webtoonId: "741891",
-    title: "가비지타임",
-    author: "2사장",
-    img: "https://image-comic.pstatic.net/webtoon/741891/thumbnail/thumbnail_IMAG21_930412959082987113.jpg",
-    url: "https://comic.naver.com/webtoon/list?titleId=741891",
-    updateDays: ["finished"],
-    isEnd: true,
-    isNew: false,
-    isUp: false,
-    platform: "naver",
-    genres: ["드라마", "스포츠", "학원"],
-    totalEpisodes: 226,
-    isDailyPass: true,
-    dailyPassDuration: 24,
-    paidEpisodes: 20,
-    freeEpisodes: 206,
-    isFree: false
-  },
-  {
-    id: "naver_703843",
-    webtoonId: "703843",
-    title: "세기말 풋사과 보습학원",
-    author: "순끼",
-    img: "https://image-comic.pstatic.net/webtoon/703843/thumbnail/thumbnail_IMAG21_391012959082987113.jpg",
-    url: "https://comic.naver.com/webtoon/list?titleId=703843",
-    updateDays: ["FRI"],
-    isEnd: false,
-    isNew: true,
-    isUp: true,
-    platform: "naver",
-    genres: ["로맨스/순정", "일상", "드라마"],
-    isFree: true
-  },
-  {
-    id: "naver_758150",
-    webtoonId: "758150",
-    title: "입학용병",
-    author: "YC / 락현",
-    img: "https://image-comic.pstatic.net/webtoon/758150/thumbnail/thumbnail_IMAG21_9301212959082987113.jpg",
-    url: "https://comic.naver.com/webtoon/list?titleId=758150",
-    updateDays: ["SUN"],
-    isEnd: false,
-    isNew: false,
-    isUp: true,
-    platform: "naver",
-    genres: ["액션", "학원"],
-    isFree: true
-  },
-  {
-    id: "naver_783054",
-    webtoonId: "783054",
-    title: "김부장",
-    author: "박태준 만화회사 / 정종택",
-    img: "https://image-comic.pstatic.net/webtoon/783054/thumbnail/thumbnail_IMAG21_931212959082987113.jpg",
-    url: "https://comic.naver.com/webtoon/list?titleId=783054",
-    updateDays: ["TUE"],
-    isEnd: false,
-    isNew: false,
-    isUp: false,
-    platform: "naver",
-    genres: ["액션", "느와르"],
-    isFree: true
-  },
-  {
-    id: "naver_811721",
-    webtoonId: "811721",
-    title: "작전명 순정",
-    author: "꼬냑 / 애사",
-    img: "https://image-comic.pstatic.net/webtoon/811721/thumbnail/thumbnail_IMAG21_70712959082987113.jpg",
-    url: "https://comic.naver.com/webtoon/list?titleId=811721",
-    updateDays: ["SAT"],
-    isEnd: false,
-    isNew: false,
-    isUp: false,
-    platform: "naver",
-    genres: ["로맨스/순정", "학원"],
-    isFree: true
-  },
-  {
-    id: "naver_774863",
-    webtoonId: "774863",
-    title: "팔이피플",
-    author: "매미 / 희세",
-    img: "https://image-comic.pstatic.net/webtoon/774863/thumbnail/thumbnail_IMAG21_3914445831525042609.jpg",
-    url: "https://comic.naver.com/webtoon/list?titleId=774863",
-    updateDays: ["THU"],
-    isEnd: false,
-    isNew: false,
-    isUp: false,
-    platform: "naver",
-    genres: ["드라마", "스릴러", "개그"],
-    isFree: true
-  },
-  {
-    id: "kakao_1393",
-    webtoonId: "1393",
-    title: "아비무쌍",
-    author: "노경찬 / 이현민",
-    img: "https://dn-img-page.kakao.com/webtoon/1393/thumbnail.jpg",
-    url: "https://webtoon.kakao.com/content/아비무쌍/1393",
-    updateDays: ["finished"],
-    isEnd: true,
-    isNew: false,
-    isUp: false,
-    platform: "kakao",
-    genres: ["무협", "액션", "드라마"],
-    isFree: false,
-    isDailyPass: true,
-    dailyPassDuration: 24,
-    totalEpisodes: 258,
-    freeEpisodes: 10,
-    paidEpisodes: 248
-  },
-  {
-    id: "kakao_1881",
-    webtoonId: "1881",
-    title: "지옥사원",
-    author: "네온비 / 캐러멜",
-    img: "https://dn-img-page.kakao.com/webtoon/1881/thumbnail.jpg",
-    url: "https://webtoon.kakao.com/content/지옥사원/1881",
-    updateDays: ["finished"],
-    isEnd: true,
-    isNew: false,
-    isUp: false,
-    platform: "kakao",
-    genres: ["판타지", "드라마"],
-    isFree: false,
-    isDailyPass: true,
-    dailyPassDuration: 24,
-    totalEpisodes: 236,
-    freeEpisodes: 12,
-    paidEpisodes: 224
-  },
-  {
-    id: "kakaoPage_55637210",
-    webtoonId: "55637210",
-    title: "의원, 다시 살다",
-    author: "태선 / 박지은",
-    img: "https://dn-img-page.kakao.com/webtoon/55637210/thumbnail.jpg",
-    url: "https://page.kakao.com/content/55637210",
-    updateDays: ["MON"],
-    isEnd: false,
-    isNew: false,
-    isUp: true,
-    platform: "kakaoPage",
-    genres: ["판타지", "무협", "의학"],
-    isFree: false,
-    isDailyPass: true,
-    dailyPassDuration: 24,
-    totalEpisodes: 180,
-    freeEpisodes: 15,
-    paidEpisodes: 165
-  },
-  {
-    id: "kakaoPage_53874744",
-    webtoonId: "53874744",
-    title: "로그인 무림",
-    author: "장철벽 / 제로빅",
-    img: "https://dn-img-page.kakao.com/webtoon/53874744/thumbnail.jpg",
-    url: "https://page.kakao.com/content/53874744",
-    updateDays: ["WED"],
-    isEnd: false,
-    isNew: false,
-    isUp: true,
-    platform: "kakaoPage",
-    genres: ["판타지", "무협", "액션"],
-    isFree: false,
-    isDailyPass: true,
-    dailyPassDuration: 24,
-    totalEpisodes: 238,
-    freeEpisodes: 20,
-    paidEpisodes: 218
-  },
-  {
-    id: "kakaoPage_54067345",
-    webtoonId: "54067345",
-    title: "북검전기",
-    author: "우각 / 해민",
-    img: "https://dn-img-page.kakao.com/webtoon/54067345/thumbnail.jpg",
-    url: "https://page.kakao.com/content/54067345",
-    updateDays: ["WED"],
-    isEnd: false,
-    isNew: false,
-    isUp: false,
-    platform: "kakaoPage",
-    genres: ["판타지", "무협", "액션"],
-    isFree: false,
-    isDailyPass: true,
-    dailyPassDuration: 24,
-    totalEpisodes: 190,
-    freeEpisodes: 15,
-    paidEpisodes: 175
-  }
-];
+const SEED_WEBTOONS: any[] = [];
 
 let cachedWebtoons: any[] | null = null;
 let cacheTime = 0;
@@ -1186,8 +497,8 @@ const GENRE_NORMALIZE: Record<string, string> = {
   HORROR_THRILLER:       "스릴러",
   SCHOOL_ACTION_FANTASY: "학원",
   BL:                    "BL",
-  // 중복 장르 통합
-  "메디컬":              "의학",
+  // 중복 장르 통합 (방향: 데이터에 있는 이름 → 화면 버튼 이름)
+  "의학":                "메디컬",
   "공포":                "스릴러",
   "힐링":                "일상",
   "학원/액션":           "학원",
@@ -1197,17 +508,19 @@ const normalizeGenre = (g: string) => GENRE_NORMALIZE[g] ?? g;
 const genresParam = req.query.genres as string | undefined;
 if (genresParam) {
   const selectedGenres = genresParam.split(",").map(g => g.trim()).filter(Boolean);
-  if (selectedGenres.includes("18+")) {
-    const others = selectedGenres.filter(g => g !== "18+");
-    webtoons = webtoons.filter(w =>
-      w.isAdult === true ||
-      (others.length > 0 && w.genres && w.genres.some((g: string) => others.includes(normalizeGenre(g))))
-    );
-  } else {
-    webtoons = webtoons.filter(w =>
-      w.genres && w.genres.some((g: string) => selectedGenres.includes(normalizeGenre(g)))
-    );
-  }
+  const wants18 = selectedGenres.includes("18+");
+  const otherGenres = selectedGenres.filter(g => g !== "18+");
+
+  webtoons = webtoons.filter(w => {
+    // 장르 조건: 선택한 장르가 없으면(18+만 눌렀으면) 통과, 있으면 매치되는지 확인
+    const genreMatch = otherGenres.length === 0
+      ? true
+      : (w.genres && w.genres.some((g: string) => otherGenres.includes(normalizeGenre(g))));
+    // 18+ 조건: 체크했으면 성인 웹툰만, 안 했으면 상관없음
+    const adultMatch = wants18 ? w.isAdult === true : true;
+    return genreMatch && adultMatch;
+  });
+}
 }
 
   // Filter: query (title or author)
@@ -1755,17 +1068,17 @@ app.post("/api/admin/crawl-kakaopage", async (req, res) => {
       "힐링":     ["일상", "힐링"],
     };
 
-    const parseBffItem = (item: any): any | null => {
+    const parseBffItem = (item: any, genreHint: string[] = []): any | null => {
       if (!item?.series_id) return null;
       const rawId = String(item.series_id);
       const compositeId = `kakaoPage_${rawId}`;
       if (existingIds.has(compositeId)) return null;
       existingIds.add(compositeId);
 
-      const cardImg = item.asset_property?.card_img || "";
-      const thumbnail = cardImg
-        ? `https://dn-img-page.kakao.com/download/resource?kid=${cardImg}&filename=th3`
-        : "";
+     const cardImg = item.asset_property?.card_img || "";
+const thumbnail = cardImg
+  ? `https://dn-img-page.kakao.com/download/resource?kid=${cardImg}&filename=th3`
+  : "";
 
       const pubPeriod = item.pub_period || "";
       const isEnd = item.state === "ST60" || pubPeriod === "완결";
@@ -1778,9 +1091,10 @@ app.post("/api/admin/crawl-kakaopage", async (req, res) => {
         ...(item.genre_tags || []),
         ...(item.tags || []),
       ].filter(Boolean);
-      const genres: string[] = [...new Set(
-        rawGenreSources.flatMap((g: string) => KPAGE_GENRE_MAP[g] || [g])
-      )].filter(Boolean);
+      const genres: string[] = [...new Set([
+        ...rawGenreSources.flatMap((g: string) => KPAGE_GENRE_MAP[g] || [g]),
+        ...genreHint, // 어떤 장르 코너에서 긁어왔는지도 장르로 인정
+      ])].filter(Boolean);
 
       const isDailyPass = !!item.is_waitfree;
       return {
@@ -1807,52 +1121,74 @@ app.post("/api/admin/crawl-kakaopage", async (req, res) => {
     };
 
     // bff-page 요일별 + 완결 수집
-const BFF_ENDPOINTS = [
-  // 요일연재 page 0~9
-  ...Array.from({length: 10}, (_, i) =>
-    `https://bff-page.kakao.com/api/gateway/view/v2/landing/dayofweek?category_uid=10&page=${i}&screen_uid=52`
-  ),
-  // 완결 page 0~9
-  ...Array.from({length: 10}, (_, i) =>
-    `https://bff-page.kakao.com/api/gateway/view/v2/landing/complete?category_uid=10&page=${i}&screen_uid=52`
-  ),
-  // 남성인기
-  ...Array.from({length: 5}, (_, i) =>
-    `https://bff-page.kakao.com/api/gateway/view/v2/landing/dayofweek?category_uid=10&page=${i}&screen_uid=10`
-  ),
-  // 여성인기
-  ...Array.from({length: 5}, (_, i) =>
-    `https://bff-page.kakao.com/api/gateway/view/v2/landing/dayofweek?category_uid=10&page=${i}&screen_uid=11`
-  ),
+// 장르 탭별 실제 화면 ID (직접 개발자도구로 찾으신 값들)
+const KPAGE_SCREEN_ENDPOINTS: { url: string; genreHint: string[]; label: string }[] = [
+  { url: "https://bff-page.kakao.com/api/gateway/view/v1/landing/ranking?category_uid=10&screen_uid=57", genreHint: ["로맨스/순정"], label: "로맨스" },
+  { url: "https://bff-page.kakao.com/api/gateway/view/v1/landing/ranking?category_uid=10&screen_uid=56", genreHint: ["로맨스/순정", "판타지"], label: "로판" },
+  { url: "https://bff-page.kakao.com/api/gateway/view/v1/landing/ranking?category_uid=10&screen_uid=59", genreHint: ["판타지"], label: "판타지" },
+  { url: "https://bff-page.kakao.com/api/gateway/view/v1/landing/ranking?category_uid=10&screen_uid=61", genreHint: ["액션"], label: "액션" },
+  { url: "https://bff-page.kakao.com/api/gateway/view/v1/landing/ranking?category_uid=10&screen_uid=60", genreHint: ["드라마"], label: "드라마" },
+  { url: "https://bff-page.kakao.com/api/gateway/view/v1/landing/ranking?category_uid=10&screen_uid=62", genreHint: ["무협"], label: "무협" },
+  { url: "https://bff-page.kakao.com/api/gateway/view/v1/layout?screen_uid=58", genreHint: ["BL"], label: "BL" },
+  { url: "https://bff-page.kakao.com/api/gateway/view/v1/layout?screen_uid=55", genreHint: [], label: "남성인기" },
+  { url: "https://bff-page.kakao.com/api/gateway/view/v1/layout?screen_uid=54", genreHint: [], label: "여성인기" },
+  { url: "https://bff-page.kakao.com/api/gateway/view/v1/layout?screen_uid=86", genreHint: [], label: "연재무료" },
 ];
 
-    for (const url of BFF_ENDPOINTS) {
-      try {
-        const apiRes = await fetch(url, {
-          headers: {
-            "accept": "application/json, text/plain, */*",
-            "accept-language": "ko-KR,ko;q=0.9",
-            "origin": "https://page.kakao.com",
-            "referer": "https://page.kakao.com/",
-            "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-          },
-        });
-        if (!apiRes.ok) {
-          log(`[카카오페이지 bff] ${url.split("?")[1]} 실패: ${apiRes.status}`);
-          continue;
-        }
-        bffSuccess = true;
-        const data = await apiRes.json();
-        const list = data?.result?.list || [];
-        for (const item of list) {
-          const entry = parseBffItem(item);
-          if (entry) { webtoons.push(entry); addedCount++; }
-        }
-        await new Promise(r => setTimeout(r, 200));
-      } catch (e: any) {
-        log(`[카카오페이지 bff 에러] ${e.message}`);
-      }
+// 응답 구조가 엔드포인트마다 다를 수 있어서, 여러 형태를 순서대로 시도해봄
+function extractKakaoPageItems(data: any): any[] {
+  if (Array.isArray(data?.result?.list)) return data.result.list;
+  if (Array.isArray(data?.result?.cardGroups)) {
+    return data.result.cardGroups.flatMap((g: any) => (g.cards || []).map((c: any) => c.content || c));
+  }
+  if (Array.isArray(data?.result?.sections)) {
+    return data.result.sections.flatMap((s: any) =>
+      (s.cardGroups || []).flatMap((g: any) => (g.cards || []).map((c: any) => c.content || c))
+    );
+  }
+  if (Array.isArray(data?.data)) {
+    return data.data.flatMap((s: any) =>
+      (s.cardGroups || []).flatMap((g: any) => (g.cards || []).map((c: any) => c.content || c))
+    );
+  }
+  return [];
+}
+
+for (const { url, genreHint, label } of KPAGE_SCREEN_ENDPOINTS) {
+  try {
+    const apiRes = await fetch(url, {
+      headers: {
+        "accept": "application/json, text/plain, */*",
+        "accept-language": "ko-KR,ko;q=0.9",
+        "origin": "https://page.kakao.com",
+        "referer": "https://page.kakao.com/",
+        "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+      },
+    });
+    if (!apiRes.ok) {
+      log(`[카카오페이지 ${label}] 실패: ${apiRes.status}`);
+      continue;
     }
+    bffSuccess = true;
+    const data = await apiRes.json();
+    const rawItems = extractKakaoPageItems(data);
+
+    if (rawItems.length === 0) {
+      // 파싱 실패 시 원인 파악용 로그 (여기 로그를 캡쳐해서 알려주시면 바로 맞춰드릴 수 있어요)
+      log(`[카카오페이지 ${label}] 항목을 못 찾음. 응답 최상위 키: ${Object.keys(data || {}).join(", ")}`);
+    } else {
+      log(`[카카오페이지 ${label}] ${rawItems.length}건 발견`);
+    }
+
+    for (const item of rawItems) {
+      const entry = parseBffItem(item, genreHint);
+      if (entry) { webtoons.push(entry); addedCount++; }
+    }
+    await new Promise(r => setTimeout(r, 250));
+  } catch (e: any) {
+    log(`[카카오페이지 ${label} 에러] ${e.message}`);
+  }
+}
 
     log(`[카카오페이지 bff] ${bffSuccess ? `수집 완료 ${addedCount}건` : "전체 실패 → 네이버 검색 fallback으로 전환"}`);
 

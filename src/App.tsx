@@ -132,6 +132,7 @@ export default function App() {
       let list = data.webtoons || [];
 
       setFilteredWebtoons(prev => append ? [...prev, ...list] : list);
+      setHasMore(data.hasMore || false);
       setTotalCount(data.total ?? 0);
       setCurrentPage(page);
     } catch (err: any) {
@@ -338,7 +339,7 @@ export default function App() {
             {/* Webtoons Cards Render Grid */}
             <div className="space-y-2.5 pt-2">
               <div className="flex justify-between items-center px-1">
-                // 이걸로 교체
+        
 <div className="flex items-center gap-2">
   <span className="text-[10px] font-extrabold text-gray-400 uppercase tracking-wider">웹툰 취향 검색 결과</span>
   {totalCount > 0 && (
