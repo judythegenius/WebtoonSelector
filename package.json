@@ -7,7 +7,7 @@
     "start": "node dist/server.cjs",
     "predev": "npx kill-port 3000",
     "dev": "granite dev",
-    "build": "ait build",
+    "build": "ait build && node -e \"require('fs').copyFileSync('dist/server.js','dist/server.cjs')\"",
     "clean": "rm -rf dist data/webtoons.json",
     "lint": "tsc --noEmit",
     "deploy": "ait deploy"
