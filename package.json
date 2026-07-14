@@ -4,14 +4,15 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "start": "node dist/server.cjs",
-    "predev": "npx kill-port 3000",
-    "dev": "granite dev",
-    "build": "ait build && node -e \"require('fs').copyFileSync('dist/server.js','dist/server.cjs')\"",
-    "clean": "rm -rf dist data/webtoons.json",
-    "lint": "tsc --noEmit",
-    "deploy": "ait deploy"
-  },
+  "start": "node dist/server.cjs",
+  "predev": "npx kill-port 3000",
+  "dev": "granite dev",
+  "build": "ait build",
+  "postbuild": "node -e \"const fs=require('fs'); if(fs.existsSync('dist/server.js')){fs.copyFileSync('dist/server.js','dist/server.cjs'); console.log('COPY_OK: server.js -> server.cjs');} else { console.log('COPY_FAIL: dist/server.js 파일이 없음'); }\"",
+  "clean": "rm -rf dist data/webtoons.json",
+  "lint": "tsc --noEmit",
+  "deploy": "ait deploy"
+},
   "dependencies": {
     "@apps-in-toss/web-framework": "^2.10.6",
     "@emotion/react": "^11.14.0",
