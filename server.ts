@@ -1764,7 +1764,7 @@ async function startServer() {
     app.use(vite.middlewares);
   } else {
     log("프로덕션 모드: 정적 애셋 빌드 파일 및 인덱스를 서빙합니다.");
-    const distPath = path.join(process.cwd(), "dist");
+    const distPath = path.join(process.cwd(), "dist/client");
     app.use(express.static(distPath));
     app.get("*", (req, res) => {
       res.sendFile(path.join(distPath, "index.html"));

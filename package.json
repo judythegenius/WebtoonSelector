@@ -3,14 +3,12 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "scripts": {
-  "start": "node dist/server.cjs",
-  "predev": "npx kill-port 3000",
+ "scripts": {
   "dev": "granite dev",
-  "build": "ait build && npx esbuild server.ts --bundle --platform=node --outfile=dist/server.js --format=cjs --external:express --external:dotenv --external:esbuild",
-  "postbuild": "node -e \"const fs=require('fs'); if(fs.existsSync('dist/server.js')){fs.copyFileSync('dist/server.js','dist/server.cjs'); console.log('COPY_OK');} else { console.log('COPY_FAIL'); }\"",
-  "clean": "rm -rf dist data/webtoons.json",
-  "lint": "tsc --noEmit",
+  "build": "ait build",
+  "build:web": "vite build --outDir dist/client && npx esbuild server.ts --bundle --platform=node --outfile=dist/server.js --format=cjs --external:express --external:dotenv --external:vite --external:esbuild",
+  "postbuild:web": "node -e \"const fs=require('fs'); fs.copyFileSync('dist/server.js','dist/server.cjs');\"",
+  "start": "node dist/server.cjs",
   "deploy": "ait deploy"
 },
   "dependencies": {
