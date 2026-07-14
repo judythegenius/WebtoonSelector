@@ -1,10 +1,8 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { FilterSettings, Webtoon } from "./types";
 import FilterPanel from "./components/FilterPanel";
 import WebtoonGrid from "./components/WebtoonGrid";
-import AdSimulator from "./components/AdSimulator";
-import { useInterstitialAd } from "./hooks/useInterstitialAd";
-import { Sparkles, RefreshCw, AlertCircle, TrendingUp, Compass, Flame, Info, Sliders } from "lucide-react";
+import { Sparkles, RefreshCw, AlertCircle, Search, X } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 
 const INITIAL_FILTERS: FilterSettings = {
@@ -33,10 +31,6 @@ export default function App() {
   const [time, setTime] = useState("12:00");
   const [showAdmin, setShowAdmin] = useState(false);
 
-  // Tracks WHY an ad was triggered ('tour' = curation tour button, 'loadMore' = pagination button)
-  // so dismissing the ad only re-curates when it makes sense.
-  const adPurposeRef = useRef<'tour' | 'loadMore' | null>(null);
-
   useEffect(() => {
     const updateTime = () => {
       const now = new Date();
@@ -48,34 +42,6 @@ export default function App() {
     const interval = setInterval(updateTime, 1000);
     return () => clearInterval(interval);
   }, []);
-
-  // Load Toss Interstitial Ad Hook
-  const {
-    adState,
-    attConsent,
-    setAttConsent,
-    loadAd,
-    showAd,
-    dismissAd,
-    resetAd
-  } = useInterstitialAd({
-    adGroupId: "ait-ad-test-interstitial-id",
-    onAdLoaded: () => {
-      showAd();
-    },
-    onAdDismissed: () => {
-      if (adPurposeRef.current === 'tour') {
-        triggerAISurpriseMatch();
-      }
-      adPurposeRef.current = null;
-    },
-    onAdError: () => {
-      if (adPurposeRef.current === 'tour') {
-        triggerAISurpriseMatch();
-      }
-      adPurposeRef.current = null;
-    }
-  });
 
   // Fetch all webtoons for context
   const fetchAllWebtoons = useCallback(async () => {
@@ -177,6 +143,10 @@ export default function App() {
     setCuratedIds(null);
   };
 
+const handleCurationTour = useCallback(() => {
+  triggerAISurpriseMatch();
+}, []);
+
   // Surprise match for Ad Curation Tour (pure local random shuffle, no AI)
   const triggerAISurpriseMatch = async () => {
     try {
@@ -189,11 +159,6 @@ export default function App() {
         handleApplyCuration(selectedIds);
       }
     } catch (e) {}
-  };
-
-  const handleCurationTour = () => {
-    adPurposeRef.current = 'tour';
-    loadAd();
   };
 
   return (
@@ -238,24 +203,47 @@ export default function App() {
                   웹툰 뭐보지?
                   <span className="px-1.5 py-0.5 bg-toss-blue-light text-toss-blue text-[9px] font-black rounded-md">MINI</span>
                 </h1>
-                <p className="text-[9px] text-gray-400 font-medium">실시간 취향 추천 비서</p>
+                <p className="text-[9px] text-gray-400 font-medium">실시간 웹툰 필터링 도구</p>
               </div>
             </div>
 
             <div className="flex items-center gap-1.5">
               {/* Tour Trigger */}
-              <button
-                id="curation-tour-btn"
-                onClick={handleCurationTour}
-                disabled={adState === "loading" || adState === "showing"}
-                className="px-2.5 py-1.5 bg-toss-blue hover:bg-blue-600 disabled:opacity-60 text-white text-[10px] font-bold rounded-lg flex items-center gap-1 transition-all cursor-pointer"
-              >
-                <Sparkles size={11} fill="currentColor" />
-                <span>랜덤 추첨 받기</span>
-              </button>
+          <button
+            id="curation-tour-btn"
+            onClick={handleCurationTour}
+            className="px-2.5 py-1.5 bg-toss-blue hover:bg-blue-600 text-white text-[10px] font-bold rounded-lg flex items-center gap-1 transition-all cursor-pointer"
+          >
+            <Sparkles size={11} fill="currentColor" />
+            <span>랜덤 추첨 받기</span>
+          </button>
             </div>
           </div>
         </header>
+
+        {/* 검색창 */}
+<div className="px-4 pt-3 pb-1">
+  <div className="relative">
+    <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
+      <Search size={18} />
+    </span>
+    <input
+      type="text"
+      placeholder="웹툰 제목 또는 작가를 입력하세요"
+      className="w-full pl-10 pr-10 py-3.5 bg-gray-50 hover:bg-gray-100/70 focus:bg-white border-2 border-transparent focus:border-toss-blue/30 focus:ring-4 focus:ring-toss-blue/5 rounded-2xl text-[14px] font-medium transition-all text-gray-800 placeholder-gray-400 outline-none"
+      value={filters.searchQuery}
+      onChange={(e) => setFilters({ ...filters, searchQuery: e.target.value })}
+    />
+    {filters.searchQuery && (
+      <button
+        onClick={() => setFilters({ ...filters, searchQuery: "" })}
+        className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-gray-400 hover:text-gray-600 transition-colors"
+      >
+        <X size={18} />
+      </button>
+    )}
+  </div>
+</div>
 
         {/* Simulated iOS/Android Application Native Shell */}
         <div className="flex-1 overflow-y-auto bg-[#f9fafb] relative flex flex-col justify-between scrollbar-none">
@@ -294,38 +282,8 @@ export default function App() {
               )}
             </AnimatePresence>
 
-            {/* Trending Quick Ribbon - styled as a beautiful horizontal swipe row */}
-            <div className="bg-white rounded-xl p-3 shadow-xs border border-gray-100 space-y-2">
-              <div className="flex items-center gap-1.5 px-0.5">
-                <span className="w-5 h-5 bg-red-50 text-red-500 rounded-md flex items-center justify-center">
-                  <TrendingUp size={11} />
-                </span>
-                <span className="text-[11px] font-bold text-gray-800">
-                  급상승 실시간 트렌드 태그
-                </span>
-              </div>
-              <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none scroll-smooth">
-                {webtoons.slice(0, 5).map((w) => (
-                  <button
-                    id={`trending-tag-${w.id}`}
-                    key={w.id}
-                    className="px-2.5 py-1 bg-gray-50 hover:bg-gray-100 text-[10px] text-gray-600 rounded-lg font-medium cursor-pointer transition-colors whitespace-nowrap flex-shrink-0 border border-gray-100"
-                    onClick={() => {
-                      setFilters({ ...filters, searchQuery: w.title });
-                      setCuratedIds(null);
-                    }}
-                  >
-                    🔥 {w.title}
-                  </button>
-                ))}
-              </div>
-            </div>
-
             {/* Condition Search Filter Panel */}
             <div className="space-y-1.5">
-              <label className="text-[10px] font-extrabold text-gray-400 uppercase tracking-wider flex items-center gap-1 px-1">
-                <Compass size={11} /> 취향 가이드 검색
-              </label>
               <FilterPanel
                 settings={filters}
                 onChange={(newFilters) => {
@@ -370,7 +328,7 @@ export default function App() {
                     className="bg-white rounded-xl p-8 text-center border border-gray-100 min-h-[220px] flex flex-col items-center justify-center"
                   >
                     <RefreshCw size={24} className="text-toss-blue animate-spin mb-2" />
-                    <p className="text-xs text-gray-500 font-medium">취향 매칭 분석 중...</p>
+                    <p className="text-xs text-gray-500 font-medium">필터링 중...</p>
                   </motion.div>
                 ) : error ? (
                   <motion.div
@@ -391,8 +349,6 @@ export default function App() {
                     {hasMore && (
                       <button
                         onClick={() => {
-                          adPurposeRef.current = 'loadMore';
-                          loadAd(); // 광고 먼저
                           fetchFilteredWebtoons(currentPage + 1, true); // 동시에 다음 페이지 로드
                         }}
                         className="w-full py-3 bg-white border border-gray-200 rounded-xl text-sm font-bold text-toss-blue hover:bg-blue-50 transition-colors mt-3 cursor-pointer"
@@ -421,14 +377,6 @@ export default function App() {
         </div>
 
       </div>
-
-      {/* Full-screen Interstitial Ad Simulator Overlay Modal */}
-      <AdSimulator
-        adState={adState}
-        attConsent={attConsent}
-        setAttConsent={setAttConsent}
-        onDismiss={dismissAd}
-      />
 
     </div>
   );

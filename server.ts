@@ -1,7 +1,6 @@
 import express from "express";
 import path from "path";
 import fs from "fs";
-import { fileURLToPath } from "url";
 import { createServer as createViteServer } from "vite";
 import dotenv from "dotenv";
 
@@ -58,7 +57,13 @@ import http from "http";
 // Load environment variables
 dotenv.config();
 
-const __dirname = path.dirname(require.main?.filename ?? process.cwd());
+const __dirname = (() => {
+  try {
+    return path.dirname(new URL(import.meta.url).pathname);
+  } catch {
+    return process.cwd();
+  }
+})();
 
 const app = express();
 const PORT = 3000;
@@ -127,29 +132,6 @@ function loadWebtoons(): any[] {
       hasChanges = true;
     }
 
-    // 카카오웹툰 같은 타이틀 중복 제거 (placement 여러 개 돌면서 중복 수집된 것)
-    // 동일 platform + title → webtoonId가 큰 것(최신)을 우선으로 유지
-    const kakaoByTitle = new Map<string, any>();
-    const nonKakao = list.filter(w => w.platform !== "kakao");
-    const kakaoOnly = list.filter(w => w.platform === "kakao");
-    for (const w of kakaoOnly) {
-      const key = w.title.trim();
-      const existing = kakaoByTitle.get(key);
-      if (!existing) {
-        kakaoByTitle.set(key, w);
-      } else {
-        // 두 개 중 webtoonId 큰 것 유지 (최신 수집된 것)
-        const existId = parseInt(existing.webtoonId) || 0;
-        const newId   = parseInt(w.webtoonId) || 0;
-        if (newId > existId) kakaoByTitle.set(key, w);
-      }
-    }
-    const beforeDedup = list.length;
-    list = [...nonKakao, ...Array.from(kakaoByTitle.values())];
-    if (list.length !== beforeDedup) {
-      log(`카카오웹툰 중복 제거: ${beforeDedup - list.length}개 정리됨`);
-      hasChanges = true;
-    }
     SEED_WEBTOONS.forEach(seedItem => {
       const existingIdx = list.findIndex(w => w.id === seedItem.id);
       if (existingIdx === -1) {
@@ -480,10 +462,10 @@ app.get("/api/webtoons", (req, res) => {
   }
 
   // Filter: price (free vs paid)
-  if (price && price !== "all") {
-    if (price === "free") {
-      webtoons = webtoons.filter(w => w.isFree !== false); // default to free if undefined
-    } else if (price === "paid") {
+        if (price && price !== "all") {
+      if (price === "free") {
+        webtoons = webtoons.filter(w => w.isFree === true);
+      } else if (price === "paid") {
       webtoons = webtoons.filter(w => w.isFree === false);
     }
   }
@@ -709,6 +691,36 @@ function itemUrlString(w: any): string {
   return w.url;
 }
 
+// 네이버 완결 전체 페이지네이션 수집 (공용 함수)
+const fetchNaverFinished = async (): Promise<any[]> => {
+  const all: any[] = [];
+  let page = 1;
+  while (true) {
+    try {
+      const res = await fetch(
+        `https://comic.naver.com/api/webtoon/titlelist/finished?page=${page}`
+      );
+      if (!res.ok) break;
+      const data = await res.json();
+      const list: any[] = Array.isArray(data.titleList) ? data.titleList : [];
+      if (list.length === 0) break;
+      all.push(...list.map((item: any) => ({ ...item, crawledWeek: "finished" })));
+      log(`[네이버 완결] page=${page} → ${list.length}건 (누적 ${all.length}건)`);
+      const totalCount = data.totalCount ?? null;
+      if (totalCount != null && all.length >= totalCount) break;
+      if (list.length < 20) break;
+      page++;
+      await new Promise(r => setTimeout(r, 150));
+      if (page > 500) break;
+    } catch (e: any) {
+      log(`[네이버 완결] page=${page} 에러: ${e.message}`);
+      break;
+    }
+  }
+  log(`[네이버 완결] 완료 — 총 ${all.length}건`);
+  return all;
+};
+
 function itemUrl(url: string): string {
   if (url.startsWith("//")) return "https:" + url;
   return url;
@@ -745,20 +757,8 @@ app.post("/api/admin/crawl", async (req, res) => {
     }
 
     // 2. Fetch completed webtoons
-    const finishedUrl = "https://comic.naver.com/api/webtoon/titlelist/finished";
-    fetchPromises.push(
-      fetch(finishedUrl)
-        .then(async (response) => {
-          if (!response.ok) return [];
-          const data = await response.json();
-          const list = data && Array.isArray(data.titleList) ? data.titleList : [];
-          return list.map((item: any) => ({ ...item, crawledWeek: "finished" }));
-        })
-        .catch((e) => {
-          log(`네이버웹툰 완결 목록 가져오기 실패: ${e.message}`);
-          return [];
-        })
-    );
+// 네이버 완결 전체 페이지네이션 수집
+fetchPromises.push(fetchNaverFinished());
 
     const results = await Promise.all(fetchPromises);
     const rawItems = results.flat();
@@ -1069,13 +1069,12 @@ app.post("/api/admin/crawl-kakaopage", async (req, res) => {
       if (!item?.series_id) return null;
       const rawId = String(item.series_id);
       const compositeId = `kakaoPage_${rawId}`;
-      if (existingIds.has(compositeId)) return null;
       existingIds.add(compositeId);
 
-     const cardImg = item.asset_property?.card_img || "";
-const thumbnail = cardImg
-  ? `https://dn-img-page.kakao.com/download/resource?kid=${cardImg}&filename=th3`
-  : "";
+    const cardImg = item.asset_property?.card_img || item.thumbnail || "";
+    const thumbnail = cardImg
+      ? `https://dn-img-page.kakao.com/download/resource?kid=${cardImg}&filename=th3`
+      : "";
 
       const pubPeriod = item.pub_period || "";
       const isEnd = item.state === "ST60" || pubPeriod === "완결";
@@ -1094,64 +1093,166 @@ const thumbnail = cardImg
       ])].filter(Boolean);
 
       const isDailyPass = !!item.is_waitfree;
-      return {
-        id: compositeId,
-        webtoonId: rawId,
-        title: item.title || "제목 없음",
-        author: item.authors || "작가 미상",
-        img: thumbnail,
-        url: `https://page.kakao.com/content/${rawId}`,
-        updateDays: updateDays.length > 0 ? updateDays : ["unknown"],
-        isEnd,
-        isNew: false,
-        isUp: false,
-        platform: "kakaoPage",
-        genres: genres.length > 0 ? genres : ["드라마"],
-        isFree: !!item.is_all_free,
-        isDailyPass,
-        dailyPassDuration: item.waitfree_period_by_minute
-          ? Math.round(item.waitfree_period_by_minute / 60)
-          : 24,
-        freeEpisodes: item.free_slide_count || 0,
-        isAdult: (item.age_grade || 0) >= 18,
-      };ㅞ
-    };
+        return {
+          id: compositeId,
+          webtoonId: rawId,
+          title: item.title || "제목 없음",
+          author: item.authors || "작가 미상",
+          img: thumbnail,
+          url: `https://page.kakao.com/content/${rawId}`,
+          updateDays: updateDays.length > 0 ? updateDays : ["unknown"],
+          isEnd,
+          isNew: false,
+          isUp: false,
+          platform: "kakaoPage",
+          genres: genres.length > 0 ? genres : ["드라마"],
+          isFree: !!item.is_all_free,
+          isDailyPass,
+          dailyPassDuration: item.waitfree_period_by_minute
+            ? Math.round(item.waitfree_period_by_minute / 60)
+            : 24,
+          freeEpisodes: item.free_slide_count || 0,
+          isAdult: (item.age_grade || 0) >= 18,
+        };
+      };
 
+ // 카카오페이지 장르 전체보기 (subcategory_uid=0 = 전체 장르) 페이지네이션 수집
+async function fetchKakaoPageGenreAll(isComplete, label, onItem) {
+  let page = 0;
+  let totalAdded = 0;
+  let receivedCount = 0;
+  let knownTotal = null;
+
+  while (true) {
+    const url = `https://bff-page.kakao.com/api/gateway/view/v1/landing/genre?category_uid=10&subcategory_uid=0&is_complete=${isComplete}&screen_uid=82&page=${page}`;
+    let res;
+    try {
+      res = await fetch(url, {
+        headers: {
+          "accept": "application/json, text/plain, */*",
+          "accept-language": "ko-KR,ko;q=0.9",
+          "origin": "https://page.kakao.com",
+          "referer": "https://page.kakao.com/",
+          "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+        },
+      });
+    } catch (e) {
+      log(`[카카오페이지 ${label}] page=${page} 요청 에러: ${e.message}`);
+      break;
+    }
+
+    if (!res.ok) {
+      log(`[카카오페이지 ${label}] page=${page} 실패: ${res.status}`);
+      break;
+    }
+
+    const data = await res.json();
+    if (page === 0) {
+      knownTotal = data?.result?.total_count ?? null;
+      log(`[카카오페이지 ${label} 응답키] result: ${Object.keys(data?.result || {}).join(", ")}`);
+      log(`[카카오페이지 ${label}] 서버가 말하는 총 작품 수: ${knownTotal}`);
+    }
+
+    const pageItems = extractKakaoPageItems(data);
+
+    if (!pageItems || pageItems.length === 0) {
+      log(`[카카오페이지 ${label}] page=${page}에서 항목 없음 → 종료`);
+      break;
+    }
+
+    for (const item of pageItems) {
+      const added = onItem(item);
+      if (added) totalAdded++;
+    }
+    receivedCount += pageItems.length;
+
+    log(`[카카오페이지 ${label}] page=${page} → ${pageItems.length}건 처리 (누적 수신 ${receivedCount}/${knownTotal ?? "?"}건, 누적 신규 ${totalAdded}건)`);
+
+    // total_count를 알고 있으면 정확하게 그 시점에 종료
+    if (knownTotal != null && receivedCount >= knownTotal) {
+      log(`[카카오페이지 ${label}] 전체 ${knownTotal}건 수신 완료 → 종료`);
+      break;
+    }
+
+    page++;
+    await new Promise(r => setTimeout(r, 200));
+
+    // total_count를 모를 때만 쓰는 안전장치 (넉넉하게 상향)
+    if (knownTotal == null && page > 1000) {
+      log(`[카카오페이지 ${label}] 안전장치 발동: 1000페이지 초과로 중단`);
+      break;
+    }
+  }
+
+  log(`[카카오페이지 ${label}] 완료 — 총 신규 ${totalAdded}건 추가 (전체 수신 ${receivedCount}건)`);
+  return totalAdded;
+}
     // bff-page 요일별 + 완결 수집
 // 장르 탭별 실제 화면 ID (직접 개발자도구로 찾으신 값들)
-const KPAGE_SCREEN_ENDPOINTS: { url: string; genreHint: string[]; label: string }[] = [
+const KPAGE_SCREEN_ENDPOINTS = [
+  { url: "https://bff-page.kakao.com/api/gateway/view/v1/landing/ranking?category_uid=10&screen_uid=48", genreHint: [], label: "전체랭킹" },
   { url: "https://bff-page.kakao.com/api/gateway/view/v1/landing/ranking?category_uid=10&screen_uid=57", genreHint: ["로맨스/순정"], label: "로맨스" },
   { url: "https://bff-page.kakao.com/api/gateway/view/v1/landing/ranking?category_uid=10&screen_uid=56", genreHint: ["로맨스/순정", "판타지"], label: "로판" },
   { url: "https://bff-page.kakao.com/api/gateway/view/v1/landing/ranking?category_uid=10&screen_uid=59", genreHint: ["판타지"], label: "판타지" },
   { url: "https://bff-page.kakao.com/api/gateway/view/v1/landing/ranking?category_uid=10&screen_uid=61", genreHint: ["액션"], label: "액션" },
   { url: "https://bff-page.kakao.com/api/gateway/view/v1/landing/ranking?category_uid=10&screen_uid=60", genreHint: ["드라마"], label: "드라마" },
   { url: "https://bff-page.kakao.com/api/gateway/view/v1/landing/ranking?category_uid=10&screen_uid=62", genreHint: ["무협"], label: "무협" },
-  { url: "https://bff-page.kakao.com/api/gateway/view/v1/layout?screen_uid=58", genreHint: ["BL"], label: "BL" },
-  { url: "https://bff-page.kakao.com/api/gateway/view/v1/layout?screen_uid=55", genreHint: [], label: "남성인기" },
-  { url: "https://bff-page.kakao.com/api/gateway/view/v1/layout?screen_uid=54", genreHint: [], label: "여성인기" },
+  { url: "https://bff-page.kakao.com/api/gateway/view/v1/landing/ranking?category_uid=10&screen_uid=58", genreHint: ["BL"], label: "BL" },
+  { url: "https://bff-page.kakao.com/api/gateway/view/v1/landing/ranking?category_uid=10&screen_uid=55", genreHint: [], label: "남성인기" },
+  { url: "https://bff-page.kakao.com/api/gateway/view/v1/landing/ranking?category_uid=10&screen_uid=54", genreHint: [], label: "여성인기" },
   { url: "https://bff-page.kakao.com/api/gateway/view/v1/layout?screen_uid=86", genreHint: [], label: "연재무료" },
 ];
 
 // 응답 구조가 엔드포인트마다 다를 수 있어서, 여러 형태를 순서대로 시도해봄
-function extractKakaoPageItems(data: any): any[] {
+function extractKakaoPageItems(data) {
+  const items = [];
+
+  // 케이스 1: result.reference.series_card_view 안에 실제 카드 데이터가 있는 구조
+  // (예: layout?screen_uid=86 같은 "연재무료" 페이지)
+  const refViews = data?.result?.reference;
+  if (refViews) {
+    const viewKeys = ["series_card_view", "series_poster_view", "series_list_view"];
+    for (const viewKey of viewKeys) {
+      const viewData = refViews[viewKey];
+      if (!viewData) continue;
+      for (const refKey of Object.keys(viewData)) {
+        const arr = viewData[refKey];
+        if (Array.isArray(arr) && arr.length > 0) {
+          items.push(...arr);
+        }
+      }
+    }
+  }
+  if (items.length > 0) return items;
+
+  // 케이스 2: 기존 구조들 (랭킹 페이지 등)
   if (Array.isArray(data?.result?.list)) return data.result.list;
   if (Array.isArray(data?.result?.cardGroups)) {
-    return data.result.cardGroups.flatMap((g: any) => (g.cards || []).map((c: any) => c.content || c));
+    return data.result.cardGroups.flatMap((g) => (g.cards || []).map((c) => c.content || c));
   }
   if (Array.isArray(data?.result?.sections)) {
-    return data.result.sections.flatMap((s: any) =>
-      (s.cardGroups || []).flatMap((g: any) => (g.cards || []).map((c: any) => c.content || c))
+    return data.result.sections.flatMap((s) =>
+      (s.cardGroups || []).flatMap((g) => (g.cards || []).map((c) => c.content || c))
+    );
+  }
+  if (Array.isArray(data?.result?.items)) return data.result.items;
+  if (Array.isArray(data?.result?.layout)) {
+    return data.result.layout.flatMap((l) =>
+      (l.card_groups || l.cardGroups || []).flatMap((g) =>
+        (g.cards || []).map((c) => c.content || c.series || c)
+      )
     );
   }
   if (Array.isArray(data?.data)) {
-    return data.data.flatMap((s: any) =>
-      (s.cardGroups || []).flatMap((g: any) => (g.cards || []).map((c: any) => c.content || c))
+    return data.data.flatMap((s) =>
+      (s.cardGroups || []).flatMap((g) => (g.cards || []).map((c) => c.content || c))
     );
   }
   return [];
 }
 
 for (const { url, genreHint, label } of KPAGE_SCREEN_ENDPOINTS) {
+  const isFreeEndpoint = url.includes("screen_uid=86"); // 연재무료 엔드포인트
   try {
     const apiRes = await fetch(url, {
       headers: {
@@ -1177,10 +1278,28 @@ for (const { url, genreHint, label } of KPAGE_SCREEN_ENDPOINTS) {
       log(`[카카오페이지 ${label}] ${rawItems.length}건 발견`);
     }
 
-    for (const item of rawItems) {
-      const entry = parseBffItem(item, genreHint);
-      if (entry) { webtoons.push(entry); addedCount++; }
+   for (const item of rawItems) {
+  const rawId = String(item.series_id);
+  const compositeId = `kakaoPage_${rawId}`;
+  
+  if (isFreeEndpoint) {
+    // 연재무료 엔드포인트: 기존에 있으면 isFree만 true로 업데이트
+    const idx = webtoons.findIndex(w => w.id === compositeId);
+    if (idx !== -1) {
+      webtoons[idx].isFree = true;
+      continue;
     }
+  } else {
+    if (existingIds.has(compositeId)) continue;
+  }
+  
+  const entry = parseBffItem(item, genreHint);
+  if (entry) {
+    if (isFreeEndpoint) entry.isFree = true;
+    webtoons.push(entry);
+    addedCount++;
+  }
+}
     await new Promise(r => setTimeout(r, 250));
   } catch (e: any) {
     log(`[카카오페이지 ${label} 에러] ${e.message}`);
@@ -1188,6 +1307,58 @@ for (const { url, genreHint, label } of KPAGE_SCREEN_ENDPOINTS) {
 }
 
     log(`[카카오페이지 bff] ${bffSuccess ? `수집 완료 ${addedCount}건` : "전체 실패 → 네이버 검색 fallback으로 전환"}`);
+
+// ── 연재중 전체 (장르 무관, subcategory_uid=0) ──
+try {
+  const added = await fetchKakaoPageGenreAll(false, "연재중 전체", (item) => {
+    const rawId = String(item.series_id);
+    if (!rawId || rawId === "undefined") return false;
+    const compositeId = `kakaoPage_${rawId}`;
+    if (existingIds.has(compositeId)) return false;
+    existingIds.add(compositeId);
+
+    const entry = parseBffItem(item, []);
+    if (entry) {
+      webtoons.push(entry);
+      return true;
+    }
+    return false;
+  });
+  addedCount += added;
+  saveWebtoons(webtoons); // ← 중간 저장 추가
+  log(`[중간 저장] 연재중 전체 수집 후 저장 완료 (총 ${webtoons.length}건)`);
+} catch (e) {
+  log(`[카카오페이지 연재중 전체 에러] ${e.message}`);
+}
+// ── 완결 전체 (장르 무관, subcategory_uid=0) ──
+try {
+  const added = await fetchKakaoPageGenreAll(true, "완결 전체", (item) => {
+    const rawId = String(item.series_id);
+    if (!rawId || rawId === "undefined") return false;
+    const compositeId = `kakaoPage_${rawId}`;
+
+    const existingIdx = webtoons.findIndex(w => w.id === compositeId);
+    if (existingIdx !== -1) {
+      webtoons[existingIdx].isEnd = true;
+      webtoons[existingIdx].updateDays = ["finished"];
+      return false;
+    }
+    if (existingIds.has(compositeId)) return false;
+    existingIds.add(compositeId);
+
+    const entry = parseBffItem(item, []);
+    if (entry) {
+      entry.isEnd = true;
+      entry.updateDays = ["finished"];
+      webtoons.push(entry);
+      return true;
+    }
+    return false;
+  });
+  addedCount += added;
+} catch (e) {
+  log(`[카카오페이지 완결 전체 에러] ${e.message}`);
+}
 
     // ── 전략 2: 네이버 검색 API fallback (bff가 막혔을 때 + 항상 보강) ──
     // 장르 키워드 × 연재상태 조합으로 page.kakao.com 링크를 최대한 긁어옴
@@ -1303,8 +1474,33 @@ app.post("/api/admin/crawl-kakao", async (req, res) => {
       { key: "timetable_fri",       day: "FRI",      isEnd: false },
       { key: "timetable_sat",       day: "SAT",      isEnd: false },
       { key: "timetable_sun",       day: "SUN",      isEnd: false },
-      { key: "timetable_completed", day: "finished", isEnd: true  },
+      { key: "timetable_mon_free_publishing", day: "MON", isEnd: false },
+      { key: "timetable_tue_free_publishing", day: "TUE", isEnd: false },
+      { key: "timetable_wed_free_publishing", day: "WED", isEnd: false },
+      { key: "timetable_thu_free_publishing", day: "THU", isEnd: false },
+      { key: "timetable_fri_free_publishing", day: "FRI", isEnd: false },
+      { key: "timetable_sat_free_publishing", day: "SAT", isEnd: false },
+      { key: "timetable_sun_free_publishing", day: "SUN", isEnd: false },
+      { key: "timetable_completed_free_publishing", day: "finished", isEnd: true },
     ];
+
+    // 카카오 완결 별도 수집
+      try {
+        const finUrl = "https://gateway-kw.kakao.com/section/v2/view/content-sorting-option?tag=timetable_finish";
+        const finRes = await fetch(finUrl, { headers: { "accept": "application/json", "origin": "https://webtoon.kakao.com", "referer": "https://webtoon.kakao.com/", "user-agent": "Mozilla/5.0" } });
+        if (finRes.ok) {
+          const finData = await finRes.json();
+          const items = finData?.data?.flatMap((s: any) => s.cardGroups?.flatMap((g: any) => g.cards || []) || []) || [];
+          for (const card of items) {
+            const content = card.content;
+            if (!content?.id) continue;
+            const compositeId = `kakao_${content.id}`;
+            if (existingIds.has(compositeId)) continue;
+            existingIds.add(compositeId);
+            // ... 기존 카드 파싱 로직 동일하게
+          }
+        }
+      } catch(e: any) { log(`[카카오완결] ${e.message}`); }
 
     // 영어코드 → 복합 장르 배열 (OR 필터에서 모두 매칭되도록)
     const GENRE_MAP: Record<string, string[]> = {
@@ -1357,10 +1553,20 @@ app.post("/api/admin/crawl-kakao", async (req, res) => {
               const content = card.content;
               if (!content || !content.id) continue;
 
-              const rawId    = String(content.id);
-              const compositeId = `kakao_${rawId}`;
-              if (existingIds.has(compositeId)) continue;
-              existingIds.add(compositeId);
+const rawId = String(content.id);
+          const compositeId = `kakao_${rawId}`;
+          const isFreeEndpoint = placement.key.includes("free_publishing");
+          const isFree = isFreeEndpoint;
+
+          // 기존에 있으면 isFree만 업데이트하고 skip
+          if (existingIds.has(compositeId)) {
+            if (isFreeEndpoint) {
+              const idx = webtoons.findIndex(w => w.id === compositeId);
+              if (idx !== -1) webtoons[idx].isFree = true;
+            }
+            continue;
+          }
+          existingIds.add(compositeId);
 
               // 작가: AUTHOR 타입 우선, 없으면 첫번째
               const authorObj = content.authors?.find((a: any) => a.type === "AUTHOR") || content.authors?.[0];
@@ -1390,8 +1596,10 @@ app.post("/api/admin/crawl-kakao", async (req, res) => {
               )].filter(Boolean);
 
               // 기다무 여부
-              const isDailyPass = content.badges?.some((b: any) => b.title === "WAIT_FOR_FREE") || false;
-              const isFree      = content.badges?.some((b: any) => b.title === "FREE_PUBLISHING") || false;
+          const isDailyPass = content.badges?.some((b: any) => 
+            b.title === "WAIT_FOR_FREE" || b.title === "기다무"
+          ) || false;
+
 
               webtoons.push({
               id:               compositeId,
@@ -1469,7 +1677,7 @@ app.get("/api/image-proxy", (req, res) => {
 
   try {
     const isNaver = imageUrl.includes("naver.com") || imageUrl.includes("pstatic.net");
-    const isKakao = imageUrl.includes("kakao.com") || imageUrl.includes("daumcdn.net") || imageUrl.includes("kakaocdn.net") || imageUrl.includes("kakaopagecdn.com");
+    const isKakao = imageUrl.includes("kakao.com") || imageUrl.includes("daumcdn.net") || imageUrl.includes("kakaocdn.net") || imageUrl.includes("kakaopagecdn.com") || imageUrl.includes("kr-a.kakaopagecdn.com") || imageUrl.includes("dn-img-page.kakao.com");
 
     const allowed = isNaver || isKakao || imageUrl.startsWith("https://") || imageUrl.startsWith("http://");
     if (!allowed) {
@@ -1480,9 +1688,9 @@ app.get("/api/image-proxy", (req, res) => {
     if (isNaver) {
       referer = "https://comic.naver.com";
     } else if (isKakao) {
-      if (imageUrl.includes("page.kakao.com") || imageUrl.includes("kakaopagecdn.com") || imageUrl.includes("dn-img-page")) {
+      if (imageUrl.includes("kr-a.kakaopagecdn.com") || imageUrl.includes("kakaopagecdn.com") || imageUrl.includes("dn-img-page")) {
         referer = "https://page.kakao.com";
-      } else {
+      } else if (isKakao) {
         referer = "https://webtoon.kakao.com";
       }
     }
@@ -1629,12 +1837,26 @@ app.get("/api/image-proxy", (req, res) => {
 app.get("/api/admin/stats", (req, res) => {
   const webtoons = loadWebtoons();
   const stats = loadStats();
+
   const total = webtoons.length;
   const enriched = webtoons.filter(w => w.genres && w.genres.length > 0).length;
+
+  // 플랫폼별 카운트 추가
+  const byPlatform = webtoons.reduce((acc, w) => {
+    acc[w.platform] = (acc[w.platform] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+
+  // 카카오페이지 상태별 카운트
+  const kakaoPageTotal = webtoons.filter(w => w.platform === "kakaoPage").length;
+  const kakaoPageEnd = webtoons.filter(w => w.platform === "kakaoPage" && w.isEnd).length;
+  const kakaoPageFree = webtoons.filter(w => w.platform === "kakaoPage" && w.isFree).length;
 
   res.json({
     total,
     enriched,
+    byPlatform,
+    kakaoPage: { total: kakaoPageTotal, finished: kakaoPageEnd, free: kakaoPageFree },
     lastCrawlRun: stats.lastCrawlRun,
     lastEnrichRun: stats.lastEnrichRun,
     logs: serverLogs
@@ -1660,7 +1882,8 @@ async function triggerBackgroundCrawl() {
           .catch(() => [])
       );
     }
-
+  fetchPromises.push(fetchNaverFinished());
+  
     const results = await Promise.all(fetchPromises);
     const rawItems = results.flat();
     if (rawItems.length === 0) {

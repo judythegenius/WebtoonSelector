@@ -71,32 +71,6 @@ const SORTS: { key: SortOption; label: string }[] = [
 
   return (
     <div id="filter-panel" className="bg-white rounded-2xl p-5 md:p-6 shadow-xs border border-gray-100 transition-all duration-300 space-y-5">
-      
-      {/* Search Input */}
-      <div>
-        <div className="relative">
-          <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
-            <Search size={18} />
-          </span>
-          <input
-            id="search-input"
-            type="text"
-            placeholder="웹툰 제목 또는 작가를 입력하세요"
-            className="w-full pl-10 pr-10 py-3.5 bg-gray-50 hover:bg-gray-100/70 focus:bg-white border-2 border-transparent focus:border-toss-blue/30 focus:ring-4 focus:ring-toss-blue/5 rounded-2xl text-[14px] font-medium transition-all text-gray-800 placeholder-gray-400 outline-none"
-            value={settings.searchQuery}
-            onChange={(e) => onChange({ ...settings, searchQuery: e.target.value })}
-          />
-          {settings.searchQuery && (
-            <button
-              id="clear-search-btn"
-              onClick={clearSearch}
-              className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-gray-400 hover:text-gray-600 transition-colors"
-            >
-              <X size={18} />
-            </button>
-          )}
-        </div>
-      </div>
 
       {/* Platform Selector - Grid for Perfect Symmetry and Comfort */}
       <div>
