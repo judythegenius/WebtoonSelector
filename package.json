@@ -6,7 +6,7 @@
  "scripts": {
   "dev": "granite dev",
   "build": "ait build",
-  "build:web": "vite build --outDir dist/client && npx esbuild server.ts --bundle --platform=node --outfile=dist/server.js --format=cjs --external:express --external:dotenv --external:vite --external:esbuild --define:import.meta.url=\\\"\\\"",
+  "build:web": "vite build --outDir dist/client && npx esbuild server.ts --bundle --platform=node --outfile=dist/server.js --format=cjs --external:express --external:dotenv --external:vite --external:esbuild --external:cors --define:import.meta.url=\"\"",
   "postbuild:web": "node -e \"const fs=require('fs'); fs.copyFileSync('dist/server.js','dist/server.cjs');\"",
   "start": "node dist/server.cjs",
   "deploy": "ait deploy"
