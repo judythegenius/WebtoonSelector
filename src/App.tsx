@@ -5,6 +5,8 @@ import WebtoonGrid from "./components/WebtoonGrid";
 import { Sparkles, RefreshCw, AlertCircle, Search, X } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 
+const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "";
+
 const INITIAL_FILTERS: FilterSettings = {
   platform: "all",
   day: "all",
@@ -46,7 +48,7 @@ export default function App() {
   // Fetch all webtoons for context
   const fetchAllWebtoons = useCallback(async () => {
     try {
-      const res = await fetch("/api/webtoons?platform=all&day=all&status=all&limit=9999");
+      const res = await fetch(`${API_BASE}/api/webtoons?platform=all&day=all&status=all&limit=9999`);
       if (res.ok) {
         const data = await res.json();
         setWebtoons(data.webtoons || []);
@@ -59,7 +61,7 @@ export default function App() {
   // Live update and self-heal information for a specific webtoon
   const handleUpdateWebtoon = useCallback(async (id: string): Promise<Webtoon | null> => {
     try {
-      const res = await fetch(`/api/webtoons/${id}/update-info`, { method: "POST" });
+      const res = await fetch(`${API_BASE}/api/webtoons/${id}/update-info`, { method: "POST" });
       if (res.ok) {
         const data = await res.json();
         if (data.success && data.webtoon) {
@@ -87,11 +89,11 @@ export default function App() {
       if (filters.price !== "all") params.append("price", filters.price);
       if (filters.searchQuery.trim()) params.append("q", filters.searchQuery);
       params.append("page", String(page));
-      params.append("limit", "6");
+      params.append("limit", "10");
       if (curatedIds && curatedIds.length > 0) params.append("ids", curatedIds.join(","));
       if (filters.sort !== "default") params.append("sort", filters.sort);
 
-      const res = await fetch(`/api/webtoons?${params.toString()}`);
+      const res = await fetch(`${API_BASE}/api/webtoons?${params.toString()}`);
       if (!res.ok) throw new Error("서버로부터 웹툰 목록을 가져오지 못했습니다.");
 
       const data = await res.json();
@@ -150,7 +152,7 @@ const handleCurationTour = useCallback(() => {
   // Surprise match for Ad Curation Tour (pure local random shuffle, no AI)
   const triggerAISurpriseMatch = async () => {
     try {
-      const response = await fetch("/api/webtoons?platform=all&day=all&status=all&limit=9999");
+      const response = await fetch(`${API_BASE}/api/webtoons?platform=all&day=all&status=all&limit=9999`);
       const data = await response.json();
       const allList: Webtoon[] = data.webtoons || [];
       if (allList.length > 0) {
@@ -195,9 +197,11 @@ const handleCurationTour = useCallback(() => {
         <header className="sticky top-0 bg-white border-b border-gray-100 z-30 flex-shrink-0">
           <div className="px-5 py-3 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-toss-blue text-white rounded-xl flex items-center justify-center font-bold font-display shadow-md shadow-blue-500/10">
-                W
-              </div>
+              <img 
+                src="https://static.toss.im/appsintoss/47343/56fe3928-16a0-48ef-b54b-5f4e5dc9a261.png"
+                className="w-8 h-8 rounded-xl object-cover shadow-md"
+                alt="웹툰 뭐보지"
+              />
               <div>
                 <h1 className="text-sm font-extrabold text-gray-900 tracking-tight font-display flex items-center gap-1">
                   웹툰 뭐보지?

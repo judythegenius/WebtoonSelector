@@ -3,6 +3,7 @@ import path from "path";
 import fs from "fs";
 import { createServer as createViteServer } from "vite";
 import dotenv from "dotenv";
+import cors from "cors";
 
 async function searchNaverWeb(query, display = 10) {
   const clientId = process.env.NAVER_CLIENT_ID;
@@ -68,6 +69,9 @@ const __dirname = (() => {
 const app = express();
 const PORT = 3000;
 
+app.use(cors({
+  origin: "*"
+}));
 app.use(express.json());
 
 // Local DB Path
