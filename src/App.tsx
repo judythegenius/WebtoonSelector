@@ -30,20 +30,7 @@ export default function App() {
   const [currentPage, setCurrentPage] = useState(1);
 
   // Real system time simulation for native mobile feel
-  const [time, setTime] = useState("12:00");
   const [showAdmin, setShowAdmin] = useState(false);
-
-  useEffect(() => {
-    const updateTime = () => {
-      const now = new Date();
-      const hrs = String(now.getHours()).padStart(2, "0");
-      const mins = String(now.getMinutes()).padStart(2, "0");
-      setTime(`${hrs}:${mins}`);
-    };
-    updateTime();
-    const interval = setInterval(updateTime, 1000);
-    return () => clearInterval(interval);
-  }, []);
 
   // Fetch all webtoons for context
   const fetchAllWebtoons = useCallback(async () => {
@@ -176,21 +163,6 @@ const handleCurationTour = useCallback(() => {
         {/* Device camera notch mockup on desktop */}
         <div className="hidden md:block absolute left-1/2 -translate-x-1/2 top-1.5 w-28 h-6 bg-slate-950 rounded-full z-50 pointer-events-none flex items-center justify-end px-3">
           <div className="w-2.5 h-2.5 bg-indigo-950 rounded-full" />
-        </div>
-
-        {/* Dynamic Interactive Status Bar */}
-        <div className="w-full h-11 px-6 pt-3 flex justify-between items-center bg-white text-xs font-semibold text-gray-800 tracking-tight select-none border-b border-gray-100 flex-shrink-0 z-40">
-          <span className="font-medium text-[11px]">{time}</span>
-          <div className="flex items-center gap-1.5 text-[10px] text-gray-600">
-            <span>5G</span>
-            <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
-              <path d="M12 3c-4.97 0-9 4.03-9 9 0 2.12.74 4.07 1.97 5.61L12 3h-.01zM22 12c0-4.97-4.03-9-9-9v14.61L20.03 12c.74-1.54 1.97-3.49 1.97-5.61z" className="opacity-30" />
-              <path d="M12 3c-4.97 0-9 4.03-9 9 0 2.12.74 4.07 1.97 5.61L12 3z" />
-            </svg>
-            <div className="w-5 h-2.5 border border-gray-400 rounded-sm p-[1px] flex items-center">
-              <div className="bg-gray-800 h-full w-[88%] rounded-3xs" />
-            </div>
-          </div>
         </div>
 
         {/* Custom Toss-App Style Header */}

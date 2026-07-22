@@ -3,6 +3,8 @@ import { Webtoon } from "../types";
 import { Sparkles, MessageSquare, Send, ArrowRight, CornerDownRight, Loader2 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 
+const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "";
+
 interface AIGuideProps {
   webtoons: Webtoon[];
   onApplyCuration: (curatedIds: string[]) => void;
@@ -36,7 +38,7 @@ export default function AIGuide({ webtoons, onApplyCuration }: AIGuideProps) {
     setPrompt(queryText);
 
     try {
-      const response = await fetch("/api/gemini/recommend", {
+      const response = await fetch(`${API_BASE}/api/gemini/recommend`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ prompt: queryText }),
@@ -193,7 +195,7 @@ export default function AIGuide({ webtoons, onApplyCuration }: AIGuideProps) {
                     >
                       {/* Proxied thumbnail */}
                       <img
-                        src={`/api/image-proxy?url=${encodeURIComponent(webtoon.img)}`}
+                        src={`${API_BASE}/api/image-proxy?url=${encodeURIComponent(webtoon.img)}`}
                         alt={webtoon.title}
                         referrerPolicy="no-referrer"
                         className="w-12 h-16 object-cover rounded-lg bg-slate-800"

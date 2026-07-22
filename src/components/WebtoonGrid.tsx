@@ -3,6 +3,8 @@ import { Webtoon } from "../types";
 import { ExternalLink, Flame, Sparkles, BookOpen, RefreshCw } from "lucide-react";
 import { motion } from "motion/react";
 
+const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "";
+
 interface WebtoonGridProps {
   webtoons: Webtoon[];
   onResetFilters: () => void;
@@ -126,8 +128,8 @@ export default function WebtoonGrid({ webtoons, onResetFilters, onUpdateWebtoon 
           const pStyle = getPlatformStyle(webtoon.platform);
           // 이미지 프록시 URL - Date.now() 제거해서 캐시 유지
           const proxiedImg = webtoon.img 
-          ? `/api/image-proxy?url=${encodeURIComponent(webtoon.img)}`
-          : "";
+            ? `${API_BASE}/api/image-proxy?url=${encodeURIComponent(webtoon.img)}`
+            : "";
 
           return (
             <motion.div
