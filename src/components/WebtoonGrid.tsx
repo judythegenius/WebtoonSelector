@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Webtoon } from "../types";
 import { ExternalLink, Flame, Sparkles, BookOpen, RefreshCw } from "lucide-react";
 import { motion } from "motion/react";
-import { openExternalBrowser } from "@apps-in-toss/web-framework";
+import { openURL } from "@apps-in-toss/web-framework";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "";
 
@@ -276,13 +276,14 @@ export default function WebtoonGrid({ webtoons, onResetFilters, onUpdateWebtoon 
                 id={`read-webtoon-btn-${webtoon.id}`}
                 onClick={(e) => {
                   e.stopPropagation();
-                  openExternalBrowser(webtoon.url);
+                 openURL(webtoon.url);
                 }}
                 className="px-4 py-2 bg-white text-gray-900 rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-md hover:bg-gray-100 transition-colors cursor-pointer"
               >
                 웹툰 보러가기
                 <ExternalLink size={12} />
               </button>
+            </div>
             </div>
 
               {/* Information Area */}

@@ -24,7 +24,6 @@ export default function App() {
   
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [curatedIds, setCuratedIds] = useState<string[] | null>(null);
   const [hasMore, setHasMore] = useState(false);
   const [totalCount, setTotalCount] = useState(0); // ← 이거 추가
   const [currentPage, setCurrentPage] = useState(1);
