@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Webtoon } from "../types";
 import { Sparkles, MessageSquare, Send, ArrowRight, CornerDownRight, Loader2 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
+import { openExternalBrowser } from "@apps-in-toss/web-framework";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "";
 
@@ -215,17 +216,15 @@ export default function AIGuide({ webtoons, onApplyCuration }: AIGuideProps) {
                           <span>{webtoon.aiReason}</span>
                         </p>
                       </div>
-                      <div className="flex items-center justify-center">
-                        <a
-                          id={`rec-link-${webtoon.id}`}
-                          href={webtoon.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="w-7 h-7 bg-white/10 hover:bg-white/20 text-white rounded-full flex items-center justify-center transition-all cursor-pointer"
-                        >
-                          <ArrowRight size={12} />
-                        </a>
-                      </div>
+                     <div className="flex items-center justify-center">
+                    <button
+                      id={`rec-link-${webtoon.id}`}
+                      onClick={() => openExternalBrowser(webtoon.url)}
+                      className="w-7 h-7 bg-white/10 hover:bg-white/20 text-white rounded-full flex items-center justify-center transition-all cursor-pointer"
+                    >
+                      <ArrowRight size={12} />
+                    </button>
+                  </div>
                     </div>
                   ))}
                 </div>

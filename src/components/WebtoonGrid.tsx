@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Webtoon } from "../types";
 import { ExternalLink, Flame, Sparkles, BookOpen, RefreshCw } from "lucide-react";
 import { motion } from "motion/react";
+import { openExternalBrowser } from "@apps-in-toss/web-framework";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "";
 
@@ -270,19 +271,19 @@ export default function WebtoonGrid({ webtoons, onResetFilters, onUpdateWebtoon 
                 </div>
 
                 {/* Action Hover Overlay */}
-                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center z-10 backdrop-blur-xs">
-                  <a
-                    id={`read-webtoon-btn-${webtoon.id}`}
-                    href={webtoon.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="px-4 py-2 bg-white text-gray-900 rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-md hover:bg-gray-100 transition-colors"
-                  >
-                    웹툰 보러가기
-                    <ExternalLink size={12} />
-                  </a>
-                </div>
-              </div>
+            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center z-10 backdrop-blur-xs">
+              <button
+                id={`read-webtoon-btn-${webtoon.id}`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  openExternalBrowser(webtoon.url);
+                }}
+                className="px-4 py-2 bg-white text-gray-900 rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-md hover:bg-gray-100 transition-colors cursor-pointer"
+              >
+                웹툰 보러가기
+                <ExternalLink size={12} />
+              </button>
+            </div>
 
               {/* Information Area */}
               <div className="p-3 md:p-4 flex flex-col flex-grow justify-between min-h-[120px]">

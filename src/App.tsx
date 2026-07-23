@@ -32,18 +32,6 @@ export default function App() {
   // Real system time simulation for native mobile feel
   const [showAdmin, setShowAdmin] = useState(false);
 
-  // Fetch all webtoons for context
-  const fetchAllWebtoons = useCallback(async () => {
-    try {
-      const res = await fetch(`${API_BASE}/api/webtoons?platform=all&day=all&status=all&limit=9999`);
-      if (res.ok) {
-        const data = await res.json();
-        setWebtoons(data.webtoons || []);
-      }
-    } catch (e) {
-      console.error("Failed to load global webtoons context", e);
-    }
-  }, []);
 
   // Live update and self-heal information for a specific webtoon
   const handleUpdateWebtoon = useCallback(async (id: string): Promise<Webtoon | null> => {
@@ -97,11 +85,6 @@ export default function App() {
     }
   }, [filters, curatedIds]);
 
-  // Initial load
-  useEffect(() => {
-    fetchAllWebtoons();
-  }, [fetchAllWebtoons]);
-
   // Update grid on filters or curation change
   useEffect(() => {
     fetchFilteredWebtoons();
@@ -138,6 +121,7 @@ const handleCurationTour = useCallback(() => {
 
   // Surprise match for Ad Curation Tour (pure local random shuffle, no AI)
   const triggerAISurpriseMatch = async () => {
+  const response = await fetch(`${API_BASE}/api/webtoons?platform=all&limit=50`); // 9999 → 50
     try {
       const response = await fetch(`${API_BASE}/api/webtoons?platform=all&day=all&status=all&limit=9999`);
       const data = await response.json();
@@ -304,7 +288,8 @@ const handleCurationTour = useCallback(() => {
                     className="bg-white rounded-xl p-8 text-center border border-gray-100 min-h-[220px] flex flex-col items-center justify-center"
                   >
                     <RefreshCw size={24} className="text-toss-blue animate-spin mb-2" />
-                    <p className="text-xs text-gray-500 font-medium">필터링 중...</p>
+                    <p className="text-xs text-gray-500 font-medium">웹툰 불러오는 중...</p>
+                    <p className="text-[10px] text-gray-400 mt-1">처음 로딩은 서버 깨우는 시간이 필요해요 조금만 기다려 주세요 (약 30초~1분)</p>
                   </motion.div>
                 ) : error ? (
                   <motion.div

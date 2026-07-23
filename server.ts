@@ -375,7 +375,9 @@ async function enrichBillingInfo(webtoon: any): Promise<boolean> {
     webtoon.paidEpisodes = paidEpisodes;
     webtoon.freeEpisodes = freeEpisodes;
     // Set isFree flag: If it's a daily pass, or has any strictly paid/cookie-only episodes, it is not completely free
-    webtoon.isFree = !isDailyPass && paidEpisodes === 0;
+    if (webtoon.isFree !== true) {
+  webtoon.isFree = !isDailyPass && paidEpisodes === 0;
+}
     
     return true;
   } catch (e) {
@@ -576,7 +578,9 @@ app.post("/api/webtoons/:id/update-info", async (req, res) => {
         webtoon.dailyPassDuration = dailyPassDuration;
         webtoon.paidEpisodes = paidEpisodes;
         webtoon.freeEpisodes = freeEpisodes;
-        webtoon.isFree = !isDailyPass && paidEpisodes === 0;
+        if (webtoon.isFree !== true) {
+  webtoon.isFree = !isDailyPass && paidEpisodes === 0;
+}
 
         // If completed, detect end preview counts
         if (webtoon.isEnd && paidEpisodes > 0) {
