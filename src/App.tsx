@@ -30,7 +30,7 @@ export default function App() {
 
   // Real system time simulation for native mobile feel
   const [showAdmin, setShowAdmin] = useState(false);
-
+const [curatedIds, setCuratedIds] = useState<string[] | null>(null);
 
   // Live update and self-heal information for a specific webtoon
   const handleUpdateWebtoon = useCallback(async (id: string): Promise<Webtoon | null> => {
@@ -90,11 +90,9 @@ export default function App() {
   }, [fetchFilteredWebtoons]);
 
   // Triggered when manual actions complete inside AdminPanel
-  const handleDataRefreshed = () => {
-    fetchAllWebtoons();
-    fetchFilteredWebtoons();
-  };
-
+const handleDataRefreshed = () => {
+  fetchFilteredWebtoons();
+};
   // Curation match applying
   const handleApplyCuration = (ids: string[]) => {
     setCuratedIds(ids);
@@ -119,19 +117,18 @@ const handleCurationTour = useCallback(() => {
 }, []);
 
   // Surprise match for Ad Curation Tour (pure local random shuffle, no AI)
-  const triggerAISurpriseMatch = async () => {
-  const response = await fetch(`${API_BASE}/api/webtoons?platform=all&limit=50`); // 9999 → 50
-    try {
-      const response = await fetch(`${API_BASE}/api/webtoons?platform=all&day=all&status=all&limit=9999`);
-      const data = await response.json();
-      const allList: Webtoon[] = data.webtoons || [];
-      if (allList.length > 0) {
-        const shuffled = [...allList].sort(() => 0.5 - Math.random());
-        const selectedIds = shuffled.slice(0, 3).map(w => w.id);
-        handleApplyCuration(selectedIds);
-      }
-    } catch (e) {}
-  };
+ const triggerAISurpriseMatch = async () => {
+  try {
+    const response = await fetch(`${API_BASE}/api/webtoons?platform=all&limit=50`);
+    const data = await response.json();
+    const allList: Webtoon[] = data.webtoons || [];
+    if (allList.length > 0) {
+      const shuffled = [...allList].sort(() => 0.5 - Math.random());
+      const selectedIds = shuffled.slice(0, 3).map(w => w.id);
+      handleApplyCuration(selectedIds);
+    }
+  } catch (e) {}
+};
 
   return (
     <div className="min-h-screen bg-[#0d111a] md:py-8 flex flex-col justify-center items-center font-sans antialiased text-gray-900">
